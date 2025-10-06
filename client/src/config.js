@@ -1,6 +1,6 @@
 // client/src/config.js
 
-export const contractAddress = "0x70Acc7e620b485F842F283604ED1044dd2A1eBa8";
+export const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS;
 
 export const contractABI = [
     {

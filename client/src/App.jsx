@@ -3,104 +3,76 @@ import { ethers } from 'ethers';
 import { contractAddress, contractABI } from './config';
 
 function App() {
-  // State variables for the DApp
   const [account, setAccount] = useState(null);
   const [contract, setContract] = useState(null);
   const [identity, setIdentity] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // State for the creation form
   const [nameInput, setNameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
 
-  // This function now also sets up the ethers contract instance
+  // Connect wallet and set contract instance
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
-        
+
         const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
-        
+
         setAccount(address);
         setContract(contractInstance);
-
-      } catch (error) {
-        console.error("Error connecting wallet:", error);
+      } catch (err) {
+        console.error("Wallet connection error:", err);
       }
     } else {
-      alert("MetaMask is not installed. Please consider installing it!");
+      alert("Please install MetaMask!");
     }
   };
 
-  // Function to read data from the smart contract
+  // Fetch identity from contract
   const getIdentity = async () => {
-    if (contract) {
+    if (contract && account) {
       try {
         const id = await contract.identities(account);
-        // The contract returns an array-like object, check the 'isCreated' flag
-        if (id.isCreated) {
-          setIdentity({ name: id.name, email: id.email });
-        }
-      } catch (error) {
-        console.error("Could not fetch identity:", error);
+        if (id.isCreated) setIdentity({ name: id.name, email: id.email });
+      } catch (err) {
+        console.error("Fetch identity error:", err);
       }
     }
   };
 
-  // Function to write data to the smart contract (create identity)
+  // Create identity on blockchain
   const createIdentity = async () => {
-    if (contract && nameInput && emailInput) {
-      try {
-        setLoading(true);
-        console.log("Sending transaction to create identity...");
-        const tx = await contract.createIdentity(nameInput, emailInput);
-        
-        // Wait for the transaction to be mined
-        await tx.wait();
-        console.log("Transaction mined!");
-        
-        // Refresh the identity data from the contract
-        await getIdentity();
-        setLoading(false);
+    if (!nameInput || !emailInput || !contract) return;
 
-      } catch (error) {
-        console.error("Error creating identity:", error);
-        setLoading(false);
-      }
+    try {
+      setLoading(true);
+      const tx = await contract.createIdentity(nameInput, emailInput);
+      await tx.wait();
+      await getIdentity();
+      setLoading(false);
+    } catch (err) {
+      console.error("Create identity error:", err);
+      setLoading(false);
     }
   };
 
-  // useEffect hook to automatically fetch identity when the user connects
   useEffect(() => {
-    // Only run this if we have a connected account and a contract instance
-    if (account && contract) {
-      getIdentity();
-    }
-  }, [account, contract]); // The effect re-runs if 'account' or 'contract' changes
-
-
-  // --- UI RENDERING --- //
+    if (account && contract) getIdentity();
+  }, [account, contract]);
 
   const renderContent = () => {
-    if (!account) {
-      return <button onClick={connectWallet}>Connect Wallet</button>;
-    }
-
-    if (loading) {
-      return <p>Loading... Please wait.</p>;
-    }
-
-    if (identity) {
-      return (
-        <div>
-          <h2>Your Digital Identity</h2>
-          <p><strong>Name:</strong> {identity.name}</p>
-          <p><strong>Email:</strong> {identity.email}</p>
-        </div>
-      );
-    }
+    if (!account) return <button onClick={connectWallet}>Connect Wallet</button>;
+    if (loading) return <p>Loading... Please wait.</p>;
+    if (identity) return (
+      <div>
+        <h2>Your Digital Identity</h2>
+        <p><strong>Name:</strong> {identity.name}</p>
+        <p><strong>Email:</strong> {identity.email}</p>
+      </div>
+    );
 
     return (
       <div>
@@ -109,18 +81,16 @@ function App() {
           type="text"
           placeholder="Enter your name"
           value={nameInput}
-          onChange={(e) => setNameInput(e.target.value)}
+          onChange={e => setNameInput(e.target.value)}
           style={{ padding: '10px', margin: '5px', width: '200px' }}
-        />
-        <br />
+        /><br />
         <input
           type="email"
           placeholder="Enter your email"
           value={emailInput}
-          onChange={(e) => setEmailInput(e.target.value)}
+          onChange={e => setEmailInput(e.target.value)}
           style={{ padding: '10px', margin: '5px', width: '200px' }}
-        />
-        <br /><br />
+        /><br /><br />
         <button onClick={createIdentity}>Create</button>
       </div>
     );
