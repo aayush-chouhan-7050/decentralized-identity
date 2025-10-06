@@ -1,91 +1,85 @@
+import { createWeb3Modal, useWeb3Modal, useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers/react';
+import { BrowserProvider, Contract } from 'ethers';
 import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import { contractAddress, contractABI, sepoliaRpc } from './config';
+import { contractAddress, contractABI, sepoliaRpc, projectId } from './config';
+
+const sepolia = {
+  chainId: 11155111,
+  name: 'Sepolia',
+  currency: 'SEP',
+  explorerUrl: 'https://sepolia.etherscan.io',
+  rpcUrl: sepoliaRpc 
+};
+
+const metadata = {
+  name: 'Decentralized Identity',
+  description: 'A dApp for creating a decentralized identity on the blockchain.',
+  url: 'https://decentralized-identity-orcin.vercel.app/',
+  icons: ['https://avatars.githubusercontent.com/u/37784886']
+};
+
+createWeb3Modal({
+  ethersConfig: {
+    metadata,
+    defaultChainId: 11155111,
+    rpcUrl: 'https://cloudflare-eth.com'
+  },
+  chains: [sepolia],
+  projectId,
+  enableAnalytics: true
+});
 
 function App() {
-  const [account, setAccount] = useState(null);
+  // Web3Modal Hooks
+  const { open } = useWeb3Modal();
+  const { address, isConnected } = useWeb3ModalAccount();
+  const { walletProvider } = useWeb3ModalProvider();
+
+  // Your DApp's state
   const [contract, setContract] = useState(null);
   const [identity, setIdentity] = useState(null);
   const [loading, setLoading] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
+  const [isIdentityFetched, setIsIdentityFetched] = useState(false);
 
-  // Connect wallet and ensure it's on the Sepolia network
-  const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const sepoliaChainId = '0xaa36a7'; // Chain ID for Sepolia is 11155111
 
-        // Check the current network
-        const network = await provider.getNetwork();
-
-        if (network.chainId !== 11155111) {
-          try {
-            // Request to switch to the Sepolia network
-            await window.ethereum.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: sepoliaChainId }],
-            });
-          } catch (switchError) {
-            // This error code indicates that the chain has not been added to MetaMask.
-            if (switchError.code === 4902) {
-              try {
-                await window.ethereum.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [
-                    {
-                      chainId: sepoliaChainId,
-                      chainName: 'Sepolia Testnet',
-                      rpcUrls: [sepoliaRpc], // Using the RPC from your config
-                      nativeCurrency: {
-                        name: 'SepoliaETH',
-                        symbol: 'SEP',
-                        decimals: 18,
-                      },
-                      blockExplorerUrls: ['https://sepolia.etherscan.io'],
-                    },
-                  ],
-                });
-              } catch (addError) {
-                 console.error("Failed to add Sepolia network", addError);
-                 alert("Failed to add the Sepolia network to MetaMask.");
-                 return;
-              }
-            } else {
-                console.error("Failed to switch to Sepolia network", switchError);
-                alert("Failed to switch to the Sepolia network. Please switch manually in MetaMask.");
-                return;
-            }
-          }
-        }
-        
-        // Now that the network is correct, request accounts and set up the contract
-        await provider.send("eth_requestAccounts", []);
+  // Effect to create contract instance when connected
+  useEffect(() => {
+    const setupContract = async () => {
+      if (isConnected && walletProvider) {
+        const provider = new BrowserProvider(walletProvider);
         const signer = await provider.getSigner();
-        const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
-
-        setAccount(await signer.getAddress());
+        const contractInstance = new Contract(contractAddress, contractABI, signer);
         setContract(contractInstance);
-
-      } catch (err) {
-        console.error("Wallet connection error:", err);
+      } else {
+        setContract(null);
+        setIdentity(null);
+        setIsIdentityFetched(false);
       }
-    } else {
-      alert("Please install MetaMask!");
-    }
-  };
+    };
+    setupContract();
+  }, [isConnected, walletProvider]);
 
-  const getIdentity = async () => {
-    if (contract && account) {
-      try {
-        const id = await contract.identities(account);
-        if (id.isCreated) setIdentity({ name: id.name, email: id.email });
-      } catch (err) {
-        console.error("Fetch identity error:", err);
+  // Effect to fetch identity once when the contract is ready
+  useEffect(() => {
+    const getIdentity = async () => {
+      if (contract && address && !isIdentityFetched) {
+        try {
+          console.log("Fetching identity for:", address);
+          const id = await contract.identities(address);
+          if (id.isCreated) {
+            setIdentity({ name: id.name, email: id.email });
+          }
+          setIsIdentityFetched(true); // Mark as fetched
+        } catch (err) {
+          console.error("Fetch identity error:", err);
+        }
       }
-    }
-  };
+    };
+    getIdentity();
+  }, [contract, address, isIdentityFetched]);
+
 
   const createIdentity = async () => {
     if (!nameInput || !emailInput || !contract) return;
@@ -93,43 +87,58 @@ function App() {
       setLoading(true);
       const tx = await contract.createIdentity(nameInput, emailInput);
       await tx.wait();
-      await getIdentity();
+      // Refetch identity after creation
+      const id = await contract.identities(address);
+      if (id.isCreated) setIdentity({ name: id.name, email: id.email });
       setLoading(false);
     } catch (err) {
       console.error("Create identity error:", err);
       setLoading(false);
+      alert("Failed to create identity. See console for details.");
     }
   };
 
-  useEffect(() => {
-    if (account && contract) getIdentity();
-  }, [account, contract]);
-
   const renderContent = () => {
-    if (!account) return <button onClick={connectWallet}>Connect Wallet</button>;
-    if (loading) return <p>Loading... Please wait.</p>;
-    if (identity) return (
-      <div>
-        <h2>Your Digital Identity</h2>
-        <p><strong>Name:</strong> {identity.name}</p>
-        <p><strong>Email:</strong> {identity.email}</p>
-      </div>
-    );
+    if (!isConnected) {
+      return <button onClick={() => open()}>Connect Wallet</button>;
+    }
 
-    return (
-      <div>
-        <h2>Create Your Identity</h2>
-        <input type="text" placeholder="Enter your name" value={nameInput} onChange={e => setNameInput(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} /><br />
-        <input type="email" placeholder="Enter your email" value={emailInput} onChange={e => setEmailInput(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} /><br /><br />
-        <button onClick={createIdentity}>Create</button>
-      </div>
-    );
+    if (loading) return <p>Loading... Please wait.</p>;
+
+    if (identity && identity.name) {
+      return (
+        <div>
+          <h2>Your Digital Identity</h2>
+          <p><strong>Name:</strong> {identity.name}</p>
+          <p><strong>Email:</strong> {identity.email}</p>
+        </div>
+      );
+    }
+
+    // Only show create form if identity is fetched and doesn't exist
+    if (isIdentityFetched && !identity) {
+        return (
+          <div>
+            <h2>Create Your Identity</h2>
+            <input type="text" placeholder="Enter your name" value={nameInput} onChange={e => setNameInput(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} /><br />
+            <input type="email" placeholder="Enter your email" value={emailInput} onChange={e => setEmailInput(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} /><br /><br />
+            <button onClick={createIdentity}>Create</button>
+          </div>
+        );
+    }
+    
+    return <p>Checking for your identity...</p>;
   };
 
   return (
     <div className="App">
       <h1>Decentralized Identity</h1>
-      {account && <p><strong>Connected:</strong> {account}</p>}
+      {isConnected && (
+        <div>
+          <p><strong>Connected:</strong> {address}</p>
+          <button onClick={() => open({ view: 'Account' })}>Account</button>
+        </div>
+      )}
       <hr />
       {renderContent()}
     </div>

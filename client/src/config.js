@@ -78,3 +78,4 @@ export const contractABI = [
   ];
 
 export const sepoliaRpc = import.meta.env.VITE_SEPOLIA_RPC;
+export const projectId = import.meta.env.VITE_PROJECT_ID;
