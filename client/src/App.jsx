@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { contractAddress, contractABI } from './config';
+import { contractAddress, contractABI, sepoliaRpc } from './config';
 
 function App() {
   const [account, setAccount] = useState(null);
@@ -10,18 +10,20 @@ function App() {
   const [nameInput, setNameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
 
-  // Connect wallet and set contract instance
+  // Connect wallet and create contract instance using explicit Sepolia RPC
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
+        // Request account access from MetaMask
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
 
+        // Explicitly create a Sepolia JSON-RPC provider
+        const rpcProvider = new ethers.JsonRpcProvider(sepoliaRpc);
+        const signer = await provider.getSigner();
         const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
 
-        setAccount(address);
+        setAccount(await signer.getAddress());
         setContract(contractInstance);
       } catch (err) {
         console.error("Wallet connection error:", err);
@@ -31,7 +33,6 @@ function App() {
     }
   };
 
-  // Fetch identity from contract
   const getIdentity = async () => {
     if (contract && account) {
       try {
@@ -43,10 +44,8 @@ function App() {
     }
   };
 
-  // Create identity on blockchain
   const createIdentity = async () => {
     if (!nameInput || !emailInput || !contract) return;
-
     try {
       setLoading(true);
       const tx = await contract.createIdentity(nameInput, emailInput);
@@ -77,20 +76,8 @@ function App() {
     return (
       <div>
         <h2>Create Your Identity</h2>
-        <input
-          type="text"
-          placeholder="Enter your name"
-          value={nameInput}
-          onChange={e => setNameInput(e.target.value)}
-          style={{ padding: '10px', margin: '5px', width: '200px' }}
-        /><br />
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={emailInput}
-          onChange={e => setEmailInput(e.target.value)}
-          style={{ padding: '10px', margin: '5px', width: '200px' }}
-        /><br /><br />
+        <input type="text" placeholder="Enter your name" value={nameInput} onChange={e => setNameInput(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} /><br />
+        <input type="email" placeholder="Enter your email" value={emailInput} onChange={e => setEmailInput(e.target.value)} style={{ padding: '10px', margin: '5px', width: '200px' }} /><br /><br />
         <button onClick={createIdentity}>Create</button>
       </div>
     );

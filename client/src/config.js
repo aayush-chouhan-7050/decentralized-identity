@@ -76,3 +76,5 @@ export const contractABI = [
       "type": "function"
     }
   ];
+
+export const sepoliaRpc = import.meta.env.VITE_SEPOLIA_RPC;
