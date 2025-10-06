@@ -10,21 +10,64 @@ function App() {
   const [nameInput, setNameInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
 
-  // Connect wallet and create contract instance using explicit Sepolia RPC
+  // Connect wallet and ensure it's on the Sepolia network
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
-        // Request account access from MetaMask
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
         const provider = new ethers.BrowserProvider(window.ethereum);
+        const sepoliaChainId = '0xaa36a7'; // Chain ID for Sepolia is 11155111
 
-        // Explicitly create a Sepolia JSON-RPC provider
-        const rpcProvider = new ethers.JsonRpcProvider(sepoliaRpc);
+        // Check the current network
+        const network = await provider.getNetwork();
+
+        if (network.chainId !== 11155111) {
+          try {
+            // Request to switch to the Sepolia network
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: sepoliaChainId }],
+            });
+          } catch (switchError) {
+            // This error code indicates that the chain has not been added to MetaMask.
+            if (switchError.code === 4902) {
+              try {
+                await window.ethereum.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [
+                    {
+                      chainId: sepoliaChainId,
+                      chainName: 'Sepolia Testnet',
+                      rpcUrls: [sepoliaRpc], // Using the RPC from your config
+                      nativeCurrency: {
+                        name: 'SepoliaETH',
+                        symbol: 'SEP',
+                        decimals: 18,
+                      },
+                      blockExplorerUrls: ['https://sepolia.etherscan.io'],
+                    },
+                  ],
+                });
+              } catch (addError) {
+                 console.error("Failed to add Sepolia network", addError);
+                 alert("Failed to add the Sepolia network to MetaMask.");
+                 return;
+              }
+            } else {
+                console.error("Failed to switch to Sepolia network", switchError);
+                alert("Failed to switch to the Sepolia network. Please switch manually in MetaMask.");
+                return;
+            }
+          }
+        }
+        
+        // Now that the network is correct, request accounts and set up the contract
+        await provider.send("eth_requestAccounts", []);
         const signer = await provider.getSigner();
         const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
 
         setAccount(await signer.getAddress());
         setContract(contractInstance);
+
       } catch (err) {
         console.error("Wallet connection error:", err);
       }
