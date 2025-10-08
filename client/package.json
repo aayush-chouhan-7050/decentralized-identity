@@ -10,12 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@pinata/sdk": "^2.1.0",
     "@web3modal/ethers": "^5.1.11",
     "axios": "^1.12.2",
     "ethers": "^6.15.0",
+    "lucide-react": "^0.545.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.64.0",
+    "react-hot-toast": "^2.6.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

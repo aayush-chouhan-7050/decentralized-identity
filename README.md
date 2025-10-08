@@ -25,7 +25,6 @@ A blockchain-based Self-Sovereign Identity (SSI) solution built on Ethereum that
 - [Smart Contract Details](#-smart-contract-details)
 - [Security & Privacy](#-security--privacy-considerations)
 - [Future Enhancements](#-future-enhancements)
-- [Contributing](#-contributing)
 - [License](#-license)
 
 ## 🌟 Overview
@@ -462,7 +461,7 @@ contract Identity {
 - ✅ Immutable once deployed
 - ✅ Public verifiability
 
-## 🔒 Security Considerations
+## 🔒 Security & Privacy Considerations
 
 ### Smart Contract Security
 
