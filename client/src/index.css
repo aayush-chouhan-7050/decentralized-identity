@@ -1,12 +1,10 @@
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.6;
   font-weight: 400;
-
-  color-scheme: light dark;
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  background-color: #1a1a1a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,29 +14,89 @@
 body {
   margin: 0;
   display: flex;
-  place-items: center;
-  min-width: 320px;
+  justify-content: center;
   min-height: 100vh;
+  padding: 2rem;
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  max-width: 800px;
   text-align: center;
 }
 
-button {
+.container {
+  background-color: #242424;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.address-display {
+  font-family: monospace;
+  font-size: 0.9em;
+  color: #aaa;
+  word-break: break-all;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2rem 0;
+}
+
+/* --- Form & Card Styles --- */
+.card, .form-container, .profile-view {
+  background: #2f2f2f;
+  padding: 2rem;
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+}
+
+input, textarea {
+  width: calc(100% - 22px);
+  padding: 10px;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background-color: #333;
+  color: #eee;
   font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
+
+textarea { min-height: 80px; resize: vertical; }
+.form-section h3 { margin-top: 1.5rem; text-align: left; color: #aaa; }
+
+/* --- Tab Navigation --- */
+.tab-nav { display: flex; border-bottom: 1px solid #555; margin-bottom: 1.5rem; }
+.tab-nav button { background: none; border: none; padding: 10px 20px; cursor: pointer; color: #aaa; font-size: 1em; border-bottom: 2px solid transparent; }
+.tab-nav button.active { color: #646cff; border-bottom-color: #646cff; }
+
+/* --- Profile View --- */
+.profile-view { text-align: left; }
+.profile-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid #555; padding-bottom: 1.5rem; }
+.profile-header h2 { margin: 0; }
+.profile-header p { margin: 0; color: #aaa; }
+.profile-header button { margin-left: auto; }
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #555;
 }
+
+.profile-body { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.profile-section h3 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 0.5rem; font-size: 1.1em; color: #eee; }
+.profile-section p { margin: 0.5rem 0; }
+.profile-section a { color: #646cff; text-decoration: none; margin-right: 1rem; }
+.profile-section a:hover { text-decoration: underline; }
+.profile-section strong { color: #aaa; }
+
+/* --- Buttons --- */
+.form-actions { margin-top: 1.5rem; }
+button { background-color: #646cff; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: 500; transition: background-color 0.25s; }
+button:hover { background-color: #535bf2; }
+.cancel-btn { background-color: #555; }
+.cancel-btn:hover { background-color: #777; }

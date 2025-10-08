@@ -15,7 +15,7 @@ export const contractABI = [
         {
           "indexed": false,
           "internalType": "string",
-          "name": "name",
+          "name": "ipfsHash",
           "type": "string"
         },
         {
@@ -29,15 +29,35 @@ export const contractABI = [
       "type": "event"
     },
     {
+      "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
           "internalType": "string",
-          "name": "_name",
+          "name": "newIpfsHash",
           "type": "string"
         },
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "IdentityUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "string",
-          "name": "_email",
+          "name": "_ipfsHash",
           "type": "string"
         }
       ],
@@ -58,12 +78,7 @@ export const contractABI = [
       "outputs": [
         {
           "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "email",
+          "name": "ipfsHash",
           "type": "string"
         },
         {
@@ -73,6 +88,19 @@ export const contractABI = [
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_newIpfsHash",
+          "type": "string"
+        }
+      ],
+      "name": "updateIdentity",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ];
