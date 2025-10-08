@@ -1,17 +1,19 @@
 // src/components/ProfileViewer.jsx
 import { useState } from 'react';
-import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, Copy, Check, ExternalLink } from 'lucide-react';
+import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, Copy, Check, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint } from 'lucide-react';
 
-export default function ProfileViewer({ profile, onEdit }) {
+export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress }) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (text) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
-  const formatDID = (did) => did ? `${did.slice(0, 15)}...${did.slice(-8)}` : '';
+  const formatHash = (hash) => hash ? `${hash.slice(0, 10)}...${hash.slice(-10)}` : '';
 
   // Helper for displaying a placeholder for empty fields
   const InfoPlaceholder = ({ text }) => (
@@ -22,98 +24,52 @@ export default function ProfileViewer({ profile, onEdit }) {
     <div className="profile-view">
       <div className="profile-header">
         <div className="profile-avatar">
-          {profile.profileImage ? <img src={profile.profileImage} alt={profile.name} /> : <User size={80} />}
+          {profile.profilePhoto ? <img src={profile.profilePhoto} alt={profile.fullName} /> : <User size={80} />}
         </div>
         <div className="profile-info">
-          <h1>{profile.name || 'Name not provided'}</h1>
+          <h1>{profile.fullName || 'Name not provided'}</h1>
           {profile.username && <p className="username">@{profile.username}</p>}
-          {profile.occupation && <p className="occupation">{profile.occupation}</p>}
-          <div className="did-display">
-            <code style={{ wordBreak: 'break-all' }}>{formatDID(profile.did)}</code>
-            <button onClick={() => copyToClipboard(profile.did)} className="copy-btn">
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-            </button>
-          </div>
         </div>
         <button onClick={onEdit} className="btn-secondary"><User size={20} /><span>Edit Profile</span></button>
       </div>
 
-      {/* --- About Section --- */}
-      <div className="profile-section">
-        <h3>About</h3>
-        {profile.bio ? <p>{profile.bio}</p> : <InfoPlaceholder text="No bio provided." />}
-      </div>
-
       <div className="profile-grid">
-        {/* --- Contact Information Card --- */}
         <div className="info-card">
-          <h3><User size={20} /> Contact</h3>
-          {profile.email 
-            ? <div className="info-item"><Mail size={16} /> {profile.email}</div>
-            : <div className="info-item"><Mail size={16} /> <InfoPlaceholder text="No email provided." /></div>
-          }
+          <h3><User size={20} /> Personal Information</h3>
+          {profile.fullName && <div className="info-item"><User size={16} /> {profile.fullName}</div>}
+          {profile.dateOfBirth && <div className="info-item"><Calendar size={16} /> {profile.dateOfBirth}</div>}
+          {profile.gender && <div className="info-item"><Users size={16} /> {profile.gender}</div>}
+          {profile.nationality && <div className="info-item"><Flag size={16} /> {profile.nationality}</div>}
         </div>
 
-        {/* --- Professional Card --- */}
         <div className="info-card">
-          <h3><Briefcase size={20} /> Professional</h3>
-          {profile.occupation 
-            ? <div className="info-item"><Briefcase size={16} /> {profile.occupation}</div>
-            : <div className="info-item"><Briefcase size={16} /> <InfoPlaceholder text="No occupation listed." /></div>
-          }
-          {profile.organization 
-            ? <div className="info-item"><Building size={16} /> {profile.organization}</div>
-            : <div className="info-item"><Building size={16} /> <InfoPlaceholder text="No organization listed." /></div>
-          }
-           {profile.website 
-            ? <div className="info-item"><Globe size={16} /> <a href={profile.website} target="_blank" rel="noopener noreferrer">{profile.website}</a></div>
-            : <div className="info-item"><Globe size={16} /> <InfoPlaceholder text="No website listed." /></div>
-          }
+          <h3><Mail size={20} /> Contact Information</h3>
+          {profile.email && <div className="info-item"><Mail size={16} /> {profile.email}</div>}
+          {profile.phoneNumber && <div className="info-item"><Globe size={16} /> {profile.phoneNumber}</div>}
+          {profile.residentialAddress && <div className="info-item"><Building size={16} /> {profile.residentialAddress}</div>}
+          {walletAddress && <div className="info-item"><Fingerprint size={16} /> {formatHash(walletAddress)}</div>}
         </div>
 
-        {/* --- Education Card --- */}
         <div className="info-card">
-          <h3><GraduationCap size={20} /> Education</h3>
-          {profile.education?.[0]?.institution ? (
-            <>
-              <strong>{profile.education[0].degree || 'Degree not specified'}</strong>
-              <p>{profile.education[0].field || 'Field not specified'}</p>
-              <p>{profile.education[0].institution} ({profile.education[0].year || 'Year not specified'})</p>
-            </>
-          ) : (
-            <InfoPlaceholder text="No education listed." />
-          )}
+          <h3><FileText size={20} /> Government & Identity Documents</h3>
+          {profile.nationalIdType && <div className="info-item"><FileText size={16} /> {profile.nationalIdType}</div>}
+          {profile.documentFile && <div className="info-item"><Check size={16} /> Verified</div>}
+          {!profile.documentFile && <div className="info-item"><User size={16} /> Not Verified</div>}
+          {profile.documentFile && <div className="info-item"><FileText size={16} /> <a href={profile.documentFile} target="_blank" rel="noopener noreferrer">View Document</a></div>}
         </div>
 
-        {/* --- Skills Card --- */}
         <div className="info-card">
-          <h3><Code size={20} /> Skills</h3>
-          {profile.skills?.length > 0 ? (
-            <div className="tags">
-              {profile.skills.map((skill, i) => <span key={i} className="tag">{skill}</span>)}
-            </div>
-          ) : (
-            <InfoPlaceholder text="No skills added." />
-          )}
+            <h3><Lock size={20} /> Security Fields</h3>
+            {publicKey && <div className="info-item"><Fingerprint size={16} /> <strong>Public Key:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{publicKey}</span></div>}
+            <div className="info-item"><Fingerprint size={16} /> <strong>Digital Signature:</strong> A signature is generated to verify claims, not stored.</div>
         </div>
 
-        {/* --- Social Links Card --- */}
-        <div className="info-card social-links">
-          <h3><Globe size={20} /> Social Links</h3>
-          <div className="social-grid">
-            {profile.socialLinks?.github 
-              ? <a href={profile.socialLinks.github} target="_blank" rel="noopener noreferrer"><Github size={20} /> GitHub</a>
-              : <span><Github size={20} /> <InfoPlaceholder text="Not linked" /></span>
-            }
-            {profile.socialLinks?.linkedin 
-              ? <a href={profile.socialLinks.linkedin} target="_blank" rel="noopener noreferrer"><Linkedin size={20} /> LinkedIn</a>
-              : <span><Linkedin size={20} /> <InfoPlaceholder text="Not linked" /></span>
-            }
-             {profile.socialLinks?.twitter 
-              ? <a href={profile.socialLinks.twitter} target="_blank" rel="noopener noreferrer"><Twitter size={20} /> Twitter</a>
-              : <span><Twitter size={20} /> <InfoPlaceholder text="Not linked" /></span>
-            }
-          </div>
+        <div className="info-card">
+          <h3><Globe size={20} /> Blockchain Metadata</h3>
+          {profile.did && <div className="info-item"><strong>DID:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{profile.did}</span></div>}
+          {profile.ipfsCid && <div className="info-item"><strong>IPFS CID:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{formatHash(profile.ipfsCid)}</span></div>}
+          {profile.transactionHash && <div className="info-item"><strong>Tx Hash:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{formatHash(profile.transactionHash)}</span></div>}
+          {profile.createdAt && <div className="info-item"><strong>Timestamp:</strong> {new Date(profile.createdAt).toLocaleString()}</div>}
         </div>
       </div>
     </div>

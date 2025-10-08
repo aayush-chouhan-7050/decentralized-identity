@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Loader, ExternalLink, User, Sparkles } from 'lucide-react';
 
-import { uploadProfileToIPFS } from './services/ipfs';
+import { uploadProfileToIPFS, uploadFileToIPFS } from './services/ipfs';
 import { contractAddress, contractABI, sepoliaRpc, projectId } from './config';
 import Header from './components/Header';
 import WelcomeScreen from './components/WelcomeScreen';
@@ -17,9 +17,9 @@ import ProfileEditor from './components/ProfileEditor';
 const sepolia = { chainId: 11155111, name: 'Sepolia', currency: 'SEP', explorerUrl: 'https://sepolia.etherscan.io', rpcUrl: sepoliaRpc };
 const metadata = { name: 'DecentraID', description: 'A dApp for managing a decentralized identity.', url: 'https://decentraid.aayushchouhan.com/', icons: ['https://avatars.githubusercontent.com/u/37784886'] };
 
-createWeb3Modal({ 
-  ethersConfig: { metadata, defaultChainId: 11155111, rpcUrl: sepoliaRpc }, 
-  chains: [sepolia], 
+createWeb3Modal({
+  ethersConfig: { metadata, defaultChainId: 11155111, rpcUrl: sepoliaRpc },
+  chains: [sepolia],
   projectId,
   themeMode: 'dark',
   themeVariables: { '--w3m-accent': '#646cff', '--w3m-border-radius-master': '12px' }
@@ -27,7 +27,7 @@ createWeb3Modal({
 
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
 const initialProfileState = {
-  name: "", username: "", email: "", bio: "", profileImage: "",
+  fullName: "", username: "", email: "", bio: "", profilePhoto: "",
   occupation: "", organization: "", website: "",
   education: [{ institution: "", degree: "", field: "", year: "" }],
   skills: [],
@@ -46,6 +46,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [txHash, setTxHash] = useState(null);
+  const [publicKey, setPublicKey] = useState(null);
 
   const isNewProfile = useMemo(() => !profile, [profile]);
 
@@ -53,10 +54,14 @@ export default function App() {
   useEffect(() => {
     if (isConnected && walletProvider) {
       const provider = new BrowserProvider(walletProvider);
-      provider.getSigner().then(signer => setContract(new Contract(contractAddress, contractABI, signer)));
+      provider.getSigner().then(signer => {
+        setContract(new Contract(contractAddress, contractABI, signer));
+        setPublicKey(signer.address);
+      });
     } else {
       setContract(null);
       setProfile(null);
+      setPublicKey(null);
     }
   }, [isConnected, walletProvider]);
 
@@ -68,7 +73,7 @@ export default function App() {
           const id = await contract.identities(address);
           if (id.isCreated) {
             const { data } = await axios.get(IPFS_GATEWAY + id.ipfsHash);
-            setProfile({ ...initialProfileState, ...data, did: `did:ethr:${address}` });
+            setProfile({ ...initialProfileState, ...data, did: `did:ethr:${address}`, ipfsCid: id.ipfsHash });
           } else {
             setProfile(null);
           }
@@ -93,13 +98,30 @@ export default function App() {
   
   const handleSubmitProfile = async (validatedProfileData) => {
     setLoading(true);
-    const toastId = toast.loading('Submitting to IPFS...');
+    const toastId = toast.loading('Uploading files to IPFS...');
 
     try {
-      // Data is already validated by react-hook-form, so we merge it with existing data
-      const finalData = isNewProfile ? validatedProfileData : { ...profile, ...validatedProfileData };
+      const dataToUpload = { ...validatedProfileData };
+
+      // **FIX: Only upload if the value is a FileList (a new file)**
+      if (dataToUpload.profilePhoto instanceof FileList && dataToUpload.profilePhoto.length > 0) {
+        toast.loading('Uploading profile photo...', { id: toastId });
+        dataToUpload.profilePhoto = await uploadFileToIPFS(dataToUpload.profilePhoto[0]);
+      }
+      if (dataToUpload.documentFile instanceof FileList && dataToUpload.documentFile.length > 0) {
+        toast.loading('Uploading document...', { id: toastId });
+        dataToUpload.documentFile = await uploadFileToIPFS(dataToUpload.documentFile[0]);
+      }
+      
+      toast.loading('Saving profile data...', { id: toastId });
+      
+      const finalData = isNewProfile ? dataToUpload : { ...profile, ...dataToUpload };
       const fullProfileData = { ...finalData, did: `did:ethr:${address}`, updatedAt: new Date().toISOString() };
       
+      if(isNewProfile) {
+        fullProfileData.createdAt = new Date().toISOString();
+      }
+
       const ipfsHash = await uploadProfileToIPFS(fullProfileData);
       
       toast.loading('Waiting for transaction confirmation...', { id: toastId });
@@ -107,9 +129,13 @@ export default function App() {
       const tx = await (isNewProfile ? contract.createIdentity(ipfsHash) : contract.updateIdentity(ipfsHash));
       
       setTxHash(tx.hash);
-      await tx.wait();
+      const receipt = await tx.wait();
       
-      setProfile(fullProfileData);
+      setProfile({
+        ...fullProfileData,
+        ipfsCid: ipfsHash,
+        transactionHash: receipt.hash,
+      });
       setIsEditing(false);
 
       toast.success(
@@ -127,7 +153,6 @@ export default function App() {
     } catch (err) {
       console.error("Error submitting profile:", err);
       
-      // **IMPROVEMENT: Specific error messages**
       let errorMessage = 'Failed to submit profile.';
       if (err.code === 'ACTION_REJECTED' || err.code === 4001) {
         errorMessage = 'Transaction rejected by user.';
@@ -171,7 +196,7 @@ export default function App() {
     }
     
     if (profile) {
-      return <ProfileViewer profile={profile} onEdit={() => setIsEditing(true)} />;
+      return <ProfileViewer profile={profile} onEdit={() => setIsEditing(true)} publicKey={publicKey} walletAddress={address} />;
     }
 
     if(isConnected && !profile) {
