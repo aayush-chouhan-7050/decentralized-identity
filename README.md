@@ -3,6 +3,7 @@
 A blockchain-based Self-Sovereign Identity (SSI) solution built on Ethereum that empowers users to create, manage, and own their digital identity without reliance on centralized intermediaries.
 
 ![Ethereum](https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white)
+![IPFS](https://img.shields.io/badge/IPFS-65C2CB?style=for-the-badge&logo=ipfs&logoColor=white)
 ![Solidity](https://img.shields.io/badge/Solidity-363636?style=for-the-badge&logo=solidity&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Hardhat](https://img.shields.io/badge/Hardhat-FFF100?style=for-the-badge&logo=hardhat&logoColor=black)
@@ -22,7 +23,7 @@ A blockchain-based Self-Sovereign Identity (SSI) solution built on Ethereum that
 - [Usage Guide](#-usage-guide)
 - [Project Structure](#-project-structure)
 - [Smart Contract Details](#-smart-contract-details)
-- [Security Considerations](#-security-considerations)
+- [Security & Privacy](#-security--privacy-considerations)
 - [Future Enhancements](#-future-enhancements)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -46,20 +47,19 @@ Current digital identity systems suffer from:
 
 ### Our Solution
 
-✅ Self-Sovereign Identity (SSI) on Ethereum blockchain  
-✅ Cryptographic wallet-based authentication  
-✅ User-controlled identity creation and management  
-✅ Immutable, transparent identity registry  
+✅ Self-Sovereign Identity (SSI) using Ethereum and IPFS.  
+✅ Cryptographic wallet-based authentication.  
+✅ User-controlled creation and updates of a rich, off-chain profile.  
+✅ An immutable on-chain registry that stores only a content-addressed hash (IPFS CID).
 
 ## ✨ Features
 
-- 🔐 **Wallet-Based Authentication** - Connect using MetaMask or WalletConnect
-- 🆔 **Identity Creation** - Create your digital identity linked to your wallet address
-- 📝 **Identity Management** - View and manage your on-chain identity
-- 🔒 **Security** - Private keys never leave your wallet
-- ⚡ **Fast & Efficient** - Built on Ethereum Sepolia testnet
-- 🌐 **Decentralized** - No central authority or single point of failure
-- 📊 **Transparent** - All operations verifiable on Etherscan
+- 🔐 **Multi-Wallet Support** - Connect using MetaMask or any WalletConnect-compatible wallet.
+- 🖼️ **Rich Profile Management** - Create and manage a detailed profile with fields for bio, social links, education, skills, and more.
+- 📝 **Identity Updates** - Seamlessly update your entire profile by sending a single transaction with the new data pointer.
+- 💾 **Decentralized Off-Chain Storage** - All detailed personal information is stored on IPFS for enhanced privacy and cost-efficiency.
+- 🔗 **On-Chain Verification** - The smart contract only stores a unique IPFS hash, acting as an immutable, verifiable link to your off-chain data.
+- 🌐 **Decentralized & Transparent** - No central authority, with all ownership changes verifiable on Etherscan.
 
 ## 🛠 Technology Stack
 
@@ -67,6 +67,10 @@ Current digital identity systems suffer from:
 - **Ethereum (Sepolia Testnet)** - Layer 1 blockchain for deployment
 - **Solidity ^0.8.28** - Smart contract programming language
 - **Hardhat** - Development environment for testing and deployment
+
+### Off-Chain Storage
+- **IPFS (InterPlanetary File System)** - A peer-to-peer network for storing and sharing data in a distributed file system.
+- **Pinata** - An IPFS pinning service used to ensure the profile data remains available on the IPFS network.
 
 ### Frontend
 - **React.js 19.1** - Modern UI framework
@@ -81,40 +85,43 @@ Current digital identity systems suffer from:
 
 ## 🏗 System Architecture
 
+The updated architecture separates on-chain logic from off-chain data, providing a scalable and private solution.
+
 ```
-┌─────────────────┐
-│   User (You)    │
+┌─────────────────┐             ┌─────────────────┐
+│   User (You)    │             │   Pinata API    │
+└────────┬────────┘             └────────┬────────┘
+          │                               │
+          ▼                               ▼ (Upload JSON)
+┌─────────────────┐             ┌─────────────────┐
+│    MetaMask     │             │      IPFS       │
+│   (Wallet)      │             │ (Decentralized  │
+└────────┬────────┘             │     Storage)    │
+          │                      └────────┬────────┘
+          ▼ (Sign Tx)                     │ (Returns Hash)
+┌─────────────────┐                      │
+│   React DApp    │──────────────────────┘
+│   (Frontend)    │  (1. Upload data, get hash)
+│                 │  (2. Send tx with hash)
 └────────┬────────┘
-         │
-         ▼
+          │
+          ▼ (Transaction with IPFS Hash)
 ┌─────────────────┐
-│    MetaMask     │ ◄── Private Key Management
-│   (Wallet)      │     Transaction Signing
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   React DApp    │ ◄── User Interface
-│   (Frontend)    │     State Management
-└────────┬────────┘
-         │
-         ▼ (Ethers.js)
-┌─────────────────┐
-│   Ethereum      │ ◄── Identity Storage
+│   Ethereum      │ ◄── Stores only the IPFS hash
 │   Blockchain    │     Smart Contract Logic
-│  (Sepolia Net)  │     Immutable Ledger
+│  (Sepolia Net)  │     Verifiable Ownership
 └─────────────────┘
 ```
 
-### Data Flow
+### Data Flow for Creating/Updating Identity
 
-1. **User Action** → User interacts with React DApp
-2. **Transaction Creation** → Ethers.js formats blockchain transaction
-3. **Signature Request** → MetaMask prompts user to sign
-4. **Broadcast** → Signed transaction sent to Sepolia network
-5. **Mining** → Validators process and include in block
-6. **State Update** → Smart contract state updated on-chain
-7. **UI Update** → DApp fetches and displays new state
+1. **User Action** → User fills out their detailed profile in the React DApp and clicks "Save".
+2. **JSON Creation** → The DApp compiles all form data into a structured JSON object.
+3. **IPFS Upload** → The DApp sends this JSON object to Pinata, which uploads and "pins" it to IPFS. Pinata returns a unique IPFS Hash (CID).
+4. **Transaction Creation** → Ethers.js formats a transaction to call `createIdentity` or `updateIdentity`, passing **only the IPFS hash** as an argument.
+5. **Signature & Broadcast** → MetaMask prompts the user to sign the transaction, which is then sent to the Sepolia network.
+6. **State Update** → The smart contract validates the transaction and stores the new IPFS hash in the mapping, linking it to the user's address.
+7. **UI Update** → The DApp confirms the transaction and can now fetch the profile by reading the hash from the contract and retrieving the corresponding JSON data from an IPFS gateway.
 
 ## 📋 Prerequisites
 
@@ -128,8 +135,10 @@ Before you begin, ensure you have the following installed:
 
 ### Additional Requirements
 
-- Sepolia testnet ETH (for deployment) - [Get from faucet](https://sepoliafaucet.com/)
-- WalletConnect Project ID - [Get from Cloud Dashboard](https://cloud.walletconnect.com/)
+- **Sepolia Testnet ETH** - [Get from a faucet](https://sepoliafaucet.com/)
+- **WalletConnect Project ID** - [Get from WalletConnect Cloud](https://cloud.walletconnect.com/)
+- **Alchemy (or Infura) RPC URL** - For deployment.
+- **Pinata API Keys** - [Get from Pinata](https://pinata.cloud/)
 
 ## 📥 Installation
 
@@ -200,6 +209,8 @@ Create `.env` file in the **client** directory:
 VITE_CONTRACT_ADDRESS=0xYourDeployedContractAddress
 VITE_SEPOLIA_RPC=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
 VITE_PROJECT_ID=your_walletconnect_project_id
+VITE_PINATA_API_KEY="your_pinata_api_key"
+VITE_PINATA_SECRET_KEY="your_pinata_secret_key"
 ```
 
 ## 🚀 Running the Project
@@ -407,21 +418,29 @@ decentralized-identity/
 ```solidity
 contract Identity {
     struct UserIdentity {
-        string name;
-        string email;
+        string ipfsHash; // A Content Identifier (CID) from IPFS
         bool isCreated;
     }
     
     mapping(address => UserIdentity) public identities;
     
-    event IdentityCreated(address indexed user, string name, uint256 timestamp);
+    event IdentityCreated(address indexed user, string ipfsHash, uint256 timestamp);
+    event IdentityUpdated(address indexed user, string newIpfsHash, uint256 timestamp);
     
-    function createIdentity(string memory _name, string memory _email) public {
+    function createIdentity(string memory _ipfsHash) public {
         require(!identities[msg.sender].isCreated, "Identity already exists");
-        require(bytes(_name).length > 0, "Name cannot be empty");
+        require(bytes(_ipfsHash).length > 0, "IPFS hash cannot be empty");
         
-        identities[msg.sender] = UserIdentity(_name, _email, true);
-        emit IdentityCreated(msg.sender, _name, block.timestamp);
+        identities[msg.sender] = UserIdentity(_ipfsHash, true);
+        emit IdentityCreated(msg.sender, _ipfsHash, block.timestamp);
+    }
+
+    function updateIdentity(string memory _newIpfsHash) public {
+        require(identities[msg.sender].isCreated, "No identity found to update");
+        require(bytes(_newIpfsHash).length > 0, "New IPFS hash cannot be empty");
+        
+        identities[msg.sender].ipfsHash = _newIpfsHash;
+        emit IdentityUpdated(msg.sender, _newIpfsHash, block.timestamp);
     }
 }
 ```
@@ -487,59 +506,36 @@ contract Identity {
    - Attestations from trusted entities
    - Revocation registry
 
-2. **IPFS Integration**
-   - Store large data off-chain
-   - Only hash stored on blockchain
-   - Enhanced privacy and lower costs
-
-3. **Social Recovery**
+2. **Social Recovery**
    - Guardian-based account recovery
    - Multi-signature approval process
    - Protection against key loss
 
-4. **ENS Integration**
+3. **ENS Integration**
    - Link human-readable .eth names
    - Improved user experience
    - Identity resolution
 
-5. **Update Functionality**
+4. **Update Functionality**
    - Modify existing identity information
    - Version control for changes
    - Audit trail
 
-6. **DAO Governance**
+5. **DAO Governance**
    - Community-driven protocol upgrades
    - Voting mechanisms
    - Decentralized decision making
 
-7. **Multi-Chain Support**
+6. **Multi-Chain Support**
    - Deploy on Polygon, Arbitrum, Optimism
    - Cross-chain identity portability
    - Lower transaction costs
 
-8. **Advanced Features**
+7. **Advanced Features**
    - Reputation scoring
    - Selective disclosure
    - Zero-knowledge proofs
    - DID standards compliance
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Write tests for new features
-- Follow Solidity style guide
-- Comment your code
-- Update documentation
-- Test on Sepolia before submitting
 
 ## 📝 License
 
@@ -551,23 +547,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Major Project: Decentralized Digital Identity Management
 - Date: October 7, 2025
-
-## 📞 Support
-
-For questions or issues:
-
-- Open an issue on GitHub
-- Check existing documentation
-- Review Hardhat documentation: [hardhat.org](https://hardhat.org/)
-- Review Ethers.js docs: [docs.ethers.org](https://docs.ethers.org/)
-
-## 🙏 Acknowledgments
-
-- Ethereum Foundation for blockchain infrastructure
-- OpenZeppelin for security best practices
-- Hardhat team for excellent development tools
-- Web3Modal for wallet connection solutions
-- The open-source community
 
 ## 📚 Resources
 
@@ -581,5 +560,3 @@ For questions or issues:
 ---
 
 **⭐ If you find this project useful, please consider giving it a star!**
-
-Built with ❤️ using Blockchain Technology
