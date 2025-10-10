@@ -1,24 +1,49 @@
 // src/components/ProfileViewer.jsx
-import { useState } from 'react';
-import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, Copy, Check, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint } from 'lucide-react';
+import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint, Edit } from 'lucide-react';
+
+// NEW: Helper to extract CID from a full IPFS gateway URL
+const extractCidFromUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const parts = url.split('/');
+  return parts.pop() || '';
+};
+
+// NEW: A component to display info items cleanly, with placeholders for empty values
+const InfoItem = ({ icon: Icon, label, value, isLink = false, isHash = false, isDate = false, placeholder = "Not provided" }) => {
+  let displayValue = value;
+
+  if (!value) {
+    return (
+      <div className="info-item placeholder">
+        {Icon && <Icon size={16} />}
+        <span>{label}:</span>
+        <em>{placeholder}</em>
+      </div>
+    );
+  }
+
+  if (isLink) {
+    displayValue = <a href={value} target="_blank" rel="noopener noreferrer">{label} Profile</a>;
+  } else if (isHash) {
+    displayValue = <span className="monospace">{`${value.slice(0, 10)}...${value.slice(-10)}`}</span>;
+  } else if (isDate) {
+    displayValue = new Date(value).toLocaleDateString();
+  }
+
+  return (
+    <div className="info-item">
+      {Icon && <Icon size={16} />}
+      <span>{label}:</span>
+      <strong>{displayValue}</strong>
+    </div>
+  );
+};
 
 export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress }) {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = (text) => {
-    if (text) {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const formatHash = (hash) => hash ? `${hash.slice(0, 10)}...${hash.slice(-10)}` : '';
-
-  // Helper for displaying a placeholder for empty fields
-  const InfoPlaceholder = ({ text }) => (
-    <p style={{ color: '#6b7280', fontStyle: 'italic', fontSize: '0.9rem' }}>{text}</p>
-  );
+  const hasProfessionalInfo = profile.jobTitle || profile.organization || profile.workExperience || profile.skills || profile.resume || profile.portfolio;
+  const hasEducationalInfo = profile.highestQualification || profile.institutionName || profile.graduationYear || profile.certifications;
+  const hasSocialInfo = profile.linkedin || profile.github || profile.twitter || profile.blog;
+  const hasDocumentInfo = profile.nationalIdType || profile.documentFile;
 
   return (
     <div className="profile-view">
@@ -30,46 +55,79 @@ export default function ProfileViewer({ profile, onEdit, publicKey, walletAddres
           <h1>{profile.fullName || 'Name not provided'}</h1>
           {profile.username && <p className="username">@{profile.username}</p>}
         </div>
-        <button onClick={onEdit} className="btn-secondary"><User size={20} /><span>Edit Profile</span></button>
+        <button onClick={onEdit} className="btn-secondary"><Edit size={18} /><span>Edit Profile</span></button>
       </div>
 
       <div className="profile-grid">
         <div className="info-card">
           <h3><User size={20} /> Personal Information</h3>
-          {profile.fullName && <div className="info-item"><User size={16} /> {profile.fullName}</div>}
-          {profile.dateOfBirth && <div className="info-item"><Calendar size={16} /> {profile.dateOfBirth}</div>}
-          {profile.gender && <div className="info-item"><Users size={16} /> {profile.gender}</div>}
-          {profile.nationality && <div className="info-item"><Flag size={16} /> {profile.nationality}</div>}
+          <InfoItem icon={User} label="Full Name" value={profile.fullName} />
+          <InfoItem icon={Calendar} label="Date of Birth" value={profile.dateOfBirth} isDate />
+          <InfoItem icon={Users} label="Gender" value={profile.gender} />
+          <InfoItem icon={Flag} label="Nationality" value={profile.nationality} />
         </div>
 
         <div className="info-card">
           <h3><Mail size={20} /> Contact Information</h3>
-          {profile.email && <div className="info-item"><Mail size={16} /> {profile.email}</div>}
-          {profile.phoneNumber && <div className="info-item"><Globe size={16} /> {profile.phoneNumber}</div>}
-          {profile.residentialAddress && <div className="info-item"><Building size={16} /> {profile.residentialAddress}</div>}
-          {walletAddress && <div className="info-item"><Fingerprint size={16} /> {formatHash(walletAddress)}</div>}
+          <InfoItem icon={Mail} label="Email" value={profile.email} />
+          <InfoItem icon={Globe} label="Phone" value={profile.phoneNumber} />
+          <InfoItem icon={Building} label="Address" value={profile.residentialAddress} />
+          <InfoItem icon={Fingerprint} label="Wallet" value={walletAddress} isHash />
         </div>
 
-        <div className="info-card">
-          <h3><FileText size={20} /> Government & Identity Documents</h3>
-          {profile.nationalIdType && <div className="info-item"><FileText size={16} /> {profile.nationalIdType}</div>}
-          {profile.documentFile && <div className="info-item"><Check size={16} /> Verified</div>}
-          {!profile.documentFile && <div className="info-item"><User size={16} /> Not Verified</div>}
-          {profile.documentFile && <div className="info-item"><FileText size={16} /> <a href={profile.documentFile} target="_blank" rel="noopener noreferrer">View Document</a></div>}
-        </div>
+        {hasProfessionalInfo && (
+          <div className="info-card">
+            <h3><Briefcase size={20} /> Professional</h3>
+            <InfoItem icon={Briefcase} label="Job Title" value={profile.jobTitle} />
+            <InfoItem icon={Building} label="Organization" value={profile.organization} />
+            <InfoItem icon={Calendar} label="Experience" value={profile.workExperience ? `${profile.workExperience} years` : ''} />
+            <InfoItem icon={Code} label="Skills" value={profile.skills} />
+            <InfoItem icon={FileText} label="Résumé" value={profile.resume} isLink />
+            <InfoItem icon={Code} label="Résumé CID" value={extractCidFromUrl(profile.resume)} isHash />
+            <InfoItem icon={ExternalLink} label="Portfolio" value={profile.portfolio} isLink />
+          </div>
+        )}
+
+        {hasEducationalInfo && (
+          <div className="info-card">
+            <h3><GraduationCap size={20} /> Education</h3>
+            <InfoItem icon={GraduationCap} label="Qualification" value={profile.highestQualification} />
+            <InfoItem icon={Building} label="Institution" value={profile.institutionName} />
+            <InfoItem icon={Calendar} label="Graduation Year" value={profile.graduationYear} />
+            <InfoItem icon={FileText} label="Certifications" value={profile.certifications} />
+          </div>
+        )}
+        
+        {hasSocialInfo && (
+            <div className="info-card">
+                <h3><Globe size={20} /> Online Presence</h3>
+                <InfoItem icon={Linkedin} label="LinkedIn" value={profile.linkedin} isLink />
+                <InfoItem icon={Github} label="GitHub" value={profile.github} isLink />
+                <InfoItem icon={Twitter} label="Twitter / X" value={profile.twitter} isLink />
+                <InfoItem icon={ExternalLink} label="Blog" value={profile.blog} isLink />
+            </div>
+        )}
+        
+        {hasDocumentInfo && (
+          <div className="info-card">
+            <h3><FileText size={20} /> Identity Documents</h3>
+            <InfoItem icon={FileText} label="ID Type" value={profile.nationalIdType} />
+            <InfoItem icon={FileText} label="Document" value={profile.documentFile} isLink />
+            <InfoItem icon={Code} label="Document CID" value={extractCidFromUrl(profile.documentFile)} isHash />
+            <div className="info-item">
+              <Fingerprint size={16} />
+              <span>Verification:</span>
+              <strong>{profile.documentFile ? 'Document Uploaded' : 'Not Uploaded'}</strong>
+            </div>
+          </div>
+        )}
 
         <div className="info-card">
-            <h3><Lock size={20} /> Security Fields</h3>
-            {publicKey && <div className="info-item"><Fingerprint size={16} /> <strong>Public Key:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{publicKey}</span></div>}
-            <div className="info-item"><Fingerprint size={16} /> <strong>Digital Signature:</strong> A signature is generated to verify claims, not stored.</div>
-        </div>
-
-        <div className="info-card">
-          <h3><Globe size={20} /> Blockchain Metadata</h3>
-          {profile.did && <div className="info-item"><strong>DID:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{profile.did}</span></div>}
-          {profile.ipfsCid && <div className="info-item"><strong>IPFS CID:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{formatHash(profile.ipfsCid)}</span></div>}
-          {profile.transactionHash && <div className="info-item"><strong>Tx Hash:</strong> <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{formatHash(profile.transactionHash)}</span></div>}
-          {profile.createdAt && <div className="info-item"><strong>Timestamp:</strong> {new Date(profile.createdAt).toLocaleString()}</div>}
+          <h3><Lock size={20} /> Security & Blockchain</h3>
+          <InfoItem icon={Fingerprint} label="Public Key" value={publicKey} isHash />
+          <InfoItem icon={Code} label="DID" value={profile.did} isHash/>
+          <InfoItem icon={Code} label="Profile CID" value={profile.ipfsCid} isHash />
+          <InfoItem icon={Code} label="Photo CID" value={extractCidFromUrl(profile.profilePhoto)} isHash />
         </div>
       </div>
     </div>

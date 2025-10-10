@@ -25,16 +25,9 @@ createWeb3Modal({
   themeVariables: { '--w3m-accent': '#646cff', '--w3m-border-radius-master': '12px' }
 });
 
-const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
-const initialProfileState = {
-  fullName: "", username: "", email: "", bio: "", profilePhoto: "",
-  occupation: "", organization: "", website: "",
-  education: [{ institution: "", degree: "", field: "", year: "" }],
-  skills: [],
-  socialLinks: { github: "", linkedin: "", twitter: "" }
-};
-
 // --- Main App Component ---
+const PINATA_JWT = import.meta.env.VITE_PINATA_JWT;
+
 export default function App() {
   const { open } = useWeb3Modal();
   const { disconnect } = useDisconnect();
@@ -43,12 +36,12 @@ export default function App() {
 
   const [contract, setContract] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [publicKey, setPublicKey] = useState(null);
 
-  const isNewProfile = useMemo(() => !profile, [profile]);
+  const isNewProfile = useMemo(() => profile === null && isConnected, [profile, isConnected]);
 
   // --- Effects to manage contract and profile fetching ---
   useEffect(() => {
@@ -56,12 +49,14 @@ export default function App() {
       const provider = new BrowserProvider(walletProvider);
       provider.getSigner().then(signer => {
         setContract(new Contract(contractAddress, contractABI, signer));
-        setPublicKey(signer.address);
+        setPublicKey(signer.address); // Public key is the wallet address
       });
     } else {
       setContract(null);
       setProfile(null);
       setPublicKey(null);
+      localStorage.removeItem('userProfile');
+      setLoading(false);
     }
   }, [isConnected, walletProvider]);
 
@@ -71,15 +66,36 @@ export default function App() {
         setLoading(true);
         try {
           const id = await contract.identities(address);
+
           if (id.isCreated) {
-            const { data } = await axios.get(IPFS_GATEWAY + id.ipfsHash);
-            setProfile({ ...initialProfileState, ...data, did: `did:ethr:${address}`, ipfsCid: id.ipfsHash });
+            let cachedProfile = null;
+            try {
+              cachedProfile = JSON.parse(localStorage.getItem('userProfile'));
+              if (cachedProfile && cachedProfile.did !== `did:ethr:${address}`) {
+                localStorage.removeItem('userProfile'); 
+                cachedProfile = null;
+              }
+            } catch (e) { console.warn("Could not parse cached profile.", e); }
+
+            if (cachedProfile && cachedProfile.ipfsCid === id.ipfsHash) {
+              setProfile(cachedProfile);
+            } else {
+              const DEDICATED_GATEWAY_URL = import.meta.env.VITE_DEDICATED_GATEWAY_URL;
+              const url = `${DEDICATED_GATEWAY_URL}/ipfs/${id.ipfsHash}?pinataGatewayToken=${PINATA_JWT}`;
+              
+              const response = await axios.get(url);
+              const newProfileData = { ...response.data, did: `did:ethr:${address}`, ipfsCid: id.ipfsHash };
+              setProfile(newProfileData);
+              localStorage.setItem('userProfile', JSON.stringify(newProfileData));
+            }
           } else {
             setProfile(null);
           }
         } catch (err) {
           console.error("Could not fetch profile:", err);
           toast.error('Failed to fetch profile.');
+          setProfile(null);
+          localStorage.removeItem('userProfile');
         } finally {
           setLoading(false);
         }
@@ -91,37 +107,45 @@ export default function App() {
   // --- Handlers ---
   const handleDisconnect = () => {
     disconnect();
-    setContract(null);
-    setProfile(null);
-    setIsEditing(false);
   };
   
   const handleSubmitProfile = async (validatedProfileData) => {
     setLoading(true);
-    const toastId = toast.loading('Uploading files to IPFS...');
+    const toastId = toast.loading('Preparing profile data...');
 
     try {
+      const { firstName, middleName, lastName } = validatedProfileData;
+      const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
       const dataToUpload = { ...validatedProfileData };
+      const fileUploadPromises = [];
+      const fileKeys = ['profilePhoto', 'documentFile', 'resume'];
 
-      // **FIX: Only upload if the value is a FileList (a new file)**
-      if (dataToUpload.profilePhoto instanceof FileList && dataToUpload.profilePhoto.length > 0) {
-        toast.loading('Uploading profile photo...', { id: toastId });
-        dataToUpload.profilePhoto = await uploadFileToIPFS(dataToUpload.profilePhoto[0]);
-      }
-      if (dataToUpload.documentFile instanceof FileList && dataToUpload.documentFile.length > 0) {
-        toast.loading('Uploading document...', { id: toastId });
-        dataToUpload.documentFile = await uploadFileToIPFS(dataToUpload.documentFile[0]);
+      fileKeys.forEach(key => {
+        if (dataToUpload[key] instanceof FileList && dataToUpload[key].length > 0) {
+          fileUploadPromises.push(
+            uploadFileToIPFS(dataToUpload[key][0]).then(url => ({ key, url }))
+          );
+        }
+      });
+      
+      if (fileUploadPromises.length > 0) {
+        toast.loading(`Uploading ${fileUploadPromises.length} file(s)...`, { id: toastId });
+        const uploadedFiles = await Promise.all(fileUploadPromises);
+        uploadedFiles.forEach(({ key, url }) => {
+          dataToUpload[key] = url;
+        });
       }
       
-      toast.loading('Saving profile data...', { id: toastId });
+      toast.loading('Saving profile data to IPFS...', { id: toastId });
       
-      const finalData = isNewProfile ? dataToUpload : { ...profile, ...dataToUpload };
-      const fullProfileData = { ...finalData, did: `did:ethr:${address}`, updatedAt: new Date().toISOString() };
+      const fullProfileData = {
+        ...(profile || {}), // Start with the old profile data as a base
+        ...dataToUpload,   // Overwrite it with all the new data from the form
+        fullName,
+        did: `did:ethr:${address}`,
+        updatedAt: new Date().toISOString(),
+      };
       
-      if(isNewProfile) {
-        fullProfileData.createdAt = new Date().toISOString();
-      }
-
       const ipfsHash = await uploadProfileToIPFS(fullProfileData);
       
       toast.loading('Waiting for transaction confirmation...', { id: toastId });
@@ -129,15 +153,15 @@ export default function App() {
       const tx = await (isNewProfile ? contract.createIdentity(ipfsHash) : contract.updateIdentity(ipfsHash));
       
       setTxHash(tx.hash);
-      const receipt = await tx.wait();
+      await tx.wait();
       
-      setProfile({
+      const newProfileState = {
         ...fullProfileData,
         ipfsCid: ipfsHash,
-        transactionHash: receipt.hash,
-      });
+      };
+      setProfile(newProfileState);
+      localStorage.setItem('userProfile', JSON.stringify(newProfileState));
       setIsEditing(false);
-
       toast.success(
         (t) => (
           <span style={{ textAlign: 'center' }}>
@@ -152,14 +176,12 @@ export default function App() {
 
     } catch (err) {
       console.error("Error submitting profile:", err);
-      
       let errorMessage = 'Failed to submit profile.';
       if (err.code === 'ACTION_REJECTED' || err.code === 4001) {
         errorMessage = 'Transaction rejected by user.';
-      } else if (err.message.includes('insufficient funds')) {
+      } else if (err.message?.includes('insufficient funds')) {
         errorMessage = 'Insufficient funds for transaction.';
       }
-
       toast.error(errorMessage, { id: toastId });
     } finally {
       setLoading(false);
@@ -169,7 +191,8 @@ export default function App() {
 
   // --- Render Logic ---
   const renderContent = () => {
-    if (loading) {
+    // MODIFIED: Show loading screen if loading the initial profile OR if a transaction is processing
+    if (loading && (!profile || txHash)) {
       return (
         <div className="loading-screen">
           <Loader size={64} className="spinner" />
@@ -183,13 +206,13 @@ export default function App() {
       );
     }
 
-    if (isEditing || (isConnected && isNewProfile)) {
+    if (isEditing) {
       return (
         <ProfileEditor 
           existingProfile={profile}
           onSubmit={handleSubmitProfile}
           onCancel={() => setIsEditing(false)}
-          loading={loading}
+          loading={!!txHash} 
           isNewProfile={isNewProfile}
         />
       );
@@ -199,7 +222,7 @@ export default function App() {
       return <ProfileViewer profile={profile} onEdit={() => setIsEditing(true)} publicKey={publicKey} walletAddress={address} />;
     }
 
-    if(isConnected && !profile) {
+    if(isConnected && !isNewProfile && !loading) {
       return (
         <div className="no-identity-screen">
           <div className="no-identity-icon"><User size={80} /></div>
@@ -209,42 +232,32 @@ export default function App() {
         </div>
       );
     }
+    if (isConnected && !profile && !loading) {
+    return (
+      <div className="no-identity-screen">
+        <div className="no-identity-icon"><User size={80} /></div>
+        <h2>No Identity Found</h2>
+        <p>You're connected, but you haven't created an identity yet. Create your decentralized identity to get started.</p>
+        <button onClick={() => setIsEditing(true)} className="btn-primary btn-large">
+          <Sparkles size={24} />
+          <span>Create Your Identity</span>
+        </button>
+      </div>
+    );
+  }
 
     return <WelcomeScreen onConnect={() => open()} />;
   };
 
   return (
     <div className="app-container">
-      <Toaster
-        position="top-right"
-        gutter={12}
-        toastOptions={{
-          duration: 5000,
-          style: {
-            background: 'rgba(25, 30, 45, 0.9)',
-            color: '#e4e7eb',
-            border: '1.5px solid rgba(100, 108, 255, 0.25)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
-            padding: '16px 24px',
-          },
-          success: {
-            iconTheme: { primary: '#22c55e', secondary: '#0a0e1a' },
-          },
-          error: {
-            iconTheme: { primary: '#ef4444', secondary: '#0a0e1a' },
-          },
-        }}
-      />
-
+      <Toaster position="top-right" gutter={12} toastOptions={{ duration: 5000, style: { background: 'rgba(25, 30, 45, 0.9)', color: '#e4e7eb', border: '1.5px solid rgba(100, 108, 255, 0.25)', backdropFilter: 'blur(20px)', boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)', padding: '16px 24px' }, success: { iconTheme: { primary: '#22c55e', secondary: '#0a0e1a' } }, error: { iconTheme: { primary: '#ef4444', secondary: '#0a0e1a' }}}}/>
       <div className="bg-animation">
         <div className="gradient-orb orb-1"></div>
         <div className="gradient-orb orb-2"></div>
         <div className="gradient-orb orb-3"></div>
       </div>
-
       <Header isConnected={isConnected} address={address} onConnect={() => open()} onDisconnect={handleDisconnect} />
-      
       <main className="main-content">
         {renderContent()}
       </main>
