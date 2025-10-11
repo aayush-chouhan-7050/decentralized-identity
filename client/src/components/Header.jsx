@@ -32,9 +32,9 @@ export default function Header({ isConnected, address, onConnect, onDisconnect }
         ) : (
           <div className="wallet-info" ref={menuRef}>
             <div className="network-badge"><div className="status-dot"></div>Sepolia</div>
-            <button className="address-display" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <button className="address-display" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-expanded={isMenuOpen} aria-haspopup="true" aria-controls="wallet-menu">
               {formatAddress(address)}
-              <ChevronDown size={16} style={{ transform: isMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+              <ChevronDown size={22} style={{ transform: isMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
             </button>
             {isMenuOpen && (
               <div className="wallet-menu">

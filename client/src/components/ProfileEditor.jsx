@@ -199,10 +199,9 @@ export default function ProfileEditor({ existingProfile, onSubmit, onCancel, loa
       </div>
 
       <div className="wizard-actions">
-        <div>
+        <div style={{ display: 'flex', gap: '1rem' }} >
           <button type="button" onClick={handlePrevStep} disabled={currentStep === 1 || loading} className="btn-secondary"><ArrowLeft size={20} /><span>Previous</span></button>
-          {/* NEW: Added Cancel Button */}
-          {!isNewProfile && <button type="button" onClick={onCancel} disabled={loading} className="btn-secondary btn-cancel"><X size={20} /><span>Cancel</span></button>}
+          <button type="button" onClick={onCancel} disabled={loading} className="btn-secondary btn-cancel"><X size={20} /><span>Cancel</span></button>
         </div>
         {currentStep < 6
           ? <button type="button" onClick={handleNextStep} className="btn-primary"><span>Next</span><ArrowRight size={20} /></button>

@@ -23,7 +23,7 @@ const InfoItem = ({ icon: Icon, label, value, isLink = false, isHash = false, is
   }
 
   if (isLink) {
-    displayValue = <a href={value} target="_blank" rel="noopener noreferrer">{label} Profile</a>;
+    displayValue = <a href={value} target="_blank" rel="noopener noreferrer">View on {label}</a>;
   } else if (isHash) {
     displayValue = <span className="monospace">{`${value.slice(0, 10)}...${value.slice(-10)}`}</span>;
   } else if (isDate) {
@@ -39,11 +39,20 @@ const InfoItem = ({ icon: Icon, label, value, isLink = false, isHash = false, is
   );
 };
 
-export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress }) {
+export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress, pinataJwt }) {
   const hasProfessionalInfo = profile.jobTitle || profile.organization || profile.workExperience || profile.skills || profile.resume || profile.portfolio;
   const hasEducationalInfo = profile.highestQualification || profile.institutionName || profile.graduationYear || profile.certifications;
   const hasSocialInfo = profile.linkedin || profile.github || profile.twitter || profile.blog;
   const hasDocumentInfo = profile.nationalIdType || profile.documentFile;
+
+  const addTokenToUrl = (url) => {
+    if (!url || !pinataJwt || !url.includes('mypinata.cloud')) {
+      return url;
+    }
+    // Ensure the URL is absolute before adding the token
+    const absoluteUrl = url.startsWith('http') ? url : `https://${url}`;
+    return `${absoluteUrl}?pinataGatewayToken=${pinataJwt}`;
+  };
 
   return (
     <div className="profile-view">
@@ -82,7 +91,7 @@ export default function ProfileViewer({ profile, onEdit, publicKey, walletAddres
             <InfoItem icon={Building} label="Organization" value={profile.organization} />
             <InfoItem icon={Calendar} label="Experience" value={profile.workExperience ? `${profile.workExperience} years` : ''} />
             <InfoItem icon={Code} label="Skills" value={profile.skills} />
-            <InfoItem icon={FileText} label="Résumé" value={profile.resume} isLink />
+            <InfoItem icon={FileText} label="Résumé" value={addTokenToUrl(profile.resume)} isLink />
             <InfoItem icon={Code} label="Résumé CID" value={extractCidFromUrl(profile.resume)} isHash />
             <InfoItem icon={ExternalLink} label="Portfolio" value={profile.portfolio} isLink />
           </div>
@@ -112,7 +121,7 @@ export default function ProfileViewer({ profile, onEdit, publicKey, walletAddres
           <div className="info-card">
             <h3><FileText size={20} /> Identity Documents</h3>
             <InfoItem icon={FileText} label="ID Type" value={profile.nationalIdType} />
-            <InfoItem icon={FileText} label="Document" value={profile.documentFile} isLink />
+            <InfoItem icon={FileText} label="Document" value={addTokenToUrl(profile.resume)} isLink />
             <InfoItem icon={Code} label="Document CID" value={extractCidFromUrl(profile.documentFile)} isHash />
             <div className="info-item">
               <Fingerprint size={16} />

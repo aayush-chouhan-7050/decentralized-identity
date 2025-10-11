@@ -12,6 +12,7 @@ import Header from './components/Header';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfileViewer from './components/ProfileViewer';
 import ProfileEditor from './components/ProfileEditor';
+import HowToUse from './components/HowToUse'; // Import the new component
 
 // --- Web3Modal Configuration ---
 const sepolia = { chainId: 11155111, name: 'Sepolia', currency: 'SEP', explorerUrl: 'https://sepolia.etherscan.io', rpcUrl: sepoliaRpc };
@@ -40,6 +41,7 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [publicKey, setPublicKey] = useState(null);
+  const [view, setView] = useState('welcome'); // 'welcome', 'howToUse', 'app'
 
   const isNewProfile = useMemo(() => profile === null && isConnected, [profile, isConnected]);
 
@@ -57,6 +59,7 @@ export default function App() {
       setPublicKey(null);
       localStorage.removeItem('userProfile');
       setLoading(false);
+      setView('welcome');
     }
   }, [isConnected, walletProvider]);
 
@@ -64,6 +67,7 @@ export default function App() {
     const getProfile = async () => {
       if (contract && address) {
         setLoading(true);
+        setView('app');
         try {
           const id = await contract.identities(address);
 
@@ -191,6 +195,14 @@ export default function App() {
 
   // --- Render Logic ---
   const renderContent = () => {
+    if (view === 'howToUse') {
+      return <HowToUse onBack={() => setView('welcome')} />;
+    }
+
+    if (!isConnected) {
+      return <WelcomeScreen onConnect={() => open()} onHowToUse={() => setView('howToUse')} />;
+    }
+
     // MODIFIED: Show loading screen if loading the initial profile OR if a transaction is processing
     if (loading && (!profile || txHash)) {
       return (
@@ -219,7 +231,7 @@ export default function App() {
     }
     
     if (profile) {
-      return <ProfileViewer profile={profile} onEdit={() => setIsEditing(true)} publicKey={publicKey} walletAddress={address} />;
+      return <ProfileViewer profile={profile} onEdit={() => setIsEditing(true)} publicKey={publicKey} walletAddress={address} pinataJwt={PINATA_JWT}/>;
     }
 
     if(isConnected && !isNewProfile && !loading) {
@@ -246,7 +258,7 @@ export default function App() {
     );
   }
 
-    return <WelcomeScreen onConnect={() => open()} />;
+    return <WelcomeScreen onConnect={() => open()} onHowToUse={() => setView('howToUse')} />;
   };
 
   return (

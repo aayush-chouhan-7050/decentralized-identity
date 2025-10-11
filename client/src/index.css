@@ -330,7 +330,8 @@ body {
 .info-card { padding: 2rem; background: rgba(15, 20, 30, 0.6); border-radius: 16px; border: 1.5px solid rgba(100, 108, 255, 0.15); transition: all 0.3s ease; }
 .info-card:hover { border-color: rgba(100, 108, 255, 0.4); transform: translateY(-2px); }
 .info-card h3 { font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.625rem; color: #646cff; }
-.info-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; color: #d1d5db; font-size: 0.95rem; }
+.info-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; color: #d1d5db; font-size: 0.95rem; word-break: break-all; }
+.info-item > span { white-space: nowrap; }
 .info-item svg { color: #9ca3af; flex-shrink: 0; }
 .info-item:last-child { margin-bottom: 0; }
 .info-card a { color: #646cff; text-decoration: none; transition: color 0.3s ease; }
@@ -361,7 +362,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   .header-content { padding: 1rem 1.5rem; }
   .main-content { padding: 2rem 1.5rem; }
   .form-grid { grid-template-columns: 1fr; }
-  .profile-grid { grid-template-columns: 1fr; }
+  .profile-grid { 
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* MODIFIED */
+  }
 }
 
 @media (max-width: 768px) {
@@ -370,13 +373,31 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   .notification { right: 1rem; left: 1rem; max-width: none; }
   .step-label { display: none; }
   .step-line { min-width: 20px; }
-  .profile-header { flex-direction: column; text-align: center; }
+  .profile-header { 
+    flex-direction: column; 
+    text-align: center;
+    padding: 2rem; /* ADDED */
+  }
   .profile-info h1 { font-size: 1.75rem; }
 }
 
 @media (max-width: 480px) {
   .main-content { padding: 1.5rem 1rem; }
   .wizard-header, .wizard-content, .wizard-actions { padding: 1.5rem; }
+  
+  /* --- START: IMPROVED MOBILE STYLES --- */
+  .profile-header {
+    padding: 1.5rem;
+    gap: 1.5rem; 
+  }
+  .info-card {
+    padding: 1.5rem;
+  }
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  /* --- END: IMPROVED MOBILE STYLES --- */
+  
   .profile-avatar { width: 100px; height: 100px; }
   .logo-text h1 { font-size: 1.25rem; }
 }
