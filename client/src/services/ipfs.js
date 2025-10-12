@@ -8,11 +8,14 @@ const PINATA_JWT = import.meta.env.VITE_PINATA_JWT;
 const PINATA_JSON_URL = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 const PINATA_FILE_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 
-export const uploadProfileToIPFS = async (profileData) => {
-  if (!profileData) throw new Error("Profile data is required.");
+export const uploadProfileToIPFS = async (encryptedData) => {
+  if (!encryptedData) throw new Error("Encrypted data is required.");
+  const contentToUpload = typeof encryptedData === 'string' 
+    ? JSON.parse(encryptedData) 
+    : encryptedData;
 
   const pinataData = {
-    pinataContent: profileData,
+    pinataContent: contentToUpload, // Pinata can handle JSON directly
     pinataMetadata: {
       name: `DecentraID Content - ${new Date().toISOString()}`,
     },

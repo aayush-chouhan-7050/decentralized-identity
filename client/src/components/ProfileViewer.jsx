@@ -1,5 +1,5 @@
 // src/components/ProfileViewer.jsx
-import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint, Edit, Award, CheckCircle, XCircle, AlertTriangle, Trash2, Loader } from 'lucide-react';
+import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint, Edit, Award, CheckCircle, XCircle, AlertTriangle, Trash2, Loader, Shield } from 'lucide-react';
 
 const extractCidFromUrl = (url) => {
   if (!url || typeof url !== 'string') return '';
@@ -37,7 +37,7 @@ const InfoItem = ({ icon: Icon, label, value, isLink = false, isHash = false, is
   );
 };
 
-export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress, pinataJwt, credentials, onRevokeCredential, revokingId }) {
+export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress, pinataJwt, credentials, onRevokeCredential, revokingId, isRecoveryActive, onSetupRecovery, onManageRecovery }) {
   const hasProfessionalInfo = profile.jobTitle || profile.organization || profile.workExperience || profile.skills || profile.resume || profile.portfolio;
   const hasEducationalInfo = profile.highestQualification || profile.institutionName || profile.graduationYear || profile.certifications;
   const hasSocialInfo = profile.linkedin || profile.github || profile.twitter || profile.blog;
@@ -134,6 +134,19 @@ export default function ProfileViewer({ profile, onEdit, publicKey, walletAddres
           <InfoItem icon={Code} label="DID" value={profile.did} isHash/>
           <InfoItem icon={Code} label="Profile CID" value={profile.ipfsCid} isHash />
           <InfoItem icon={Code} label="Photo CID" value={extractCidFromUrl(profile.profilePhoto)} isHash />
+          <div style={{marginTop: "1rem"}}>
+            {isRecoveryActive ? (
+                <button onClick={onManageRecovery} className="btn-secondary">
+                    <Shield size={16} />
+                    <span>Manage Social Recovery</span>
+                </button>
+            ) : (
+                <button onClick={onSetupRecovery} className="btn-primary">
+                    <Shield size={16} />
+                    <span>Activate Social Recovery</span>
+                </button>
+            )}
+          </div>
         </div>
         
         {credentials && credentials.length > 0 && (
