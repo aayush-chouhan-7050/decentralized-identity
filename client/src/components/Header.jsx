@@ -1,14 +1,13 @@
 // src/components/Header.jsx
 import { useState, useRef } from 'react';
-import { useOnClickOutside } from '../hooks/useOnClickOutside'; // IMPORT THE HOOK
-import { Wallet, Shield, LogOut, Copy, Check, ChevronDown } from 'lucide-react';
+import { useOnClickOutside } from '../hooks/useOnClickOutside';
+import { Wallet, Shield, LogOut, Copy, Check, ChevronDown, Award } from 'lucide-react';
 
-export default function Header({ isConnected, address, onConnect, onDisconnect }) {
+export default function Header({ isConnected, address, onConnect, onDisconnect, isIssuer, onIssueCredential }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef(null);
 
-  // Use the hook to close the menu
   useOnClickOutside(menuRef, () => setIsMenuOpen(false));
 
   const formatAddress = (addr) => (addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '');
@@ -32,12 +31,26 @@ export default function Header({ isConnected, address, onConnect, onDisconnect }
         ) : (
           <div className="wallet-info" ref={menuRef}>
             <div className="network-badge"><div className="status-dot"></div>Sepolia</div>
+            {isIssuer && (
+              <button onClick={onIssueCredential} className="btn-secondary desktop-only">
+                <Award size={16} />
+                <span>Issue Credential</span>
+              </button>
+            )}
+
             <button className="address-display" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-expanded={isMenuOpen} aria-haspopup="true" aria-controls="wallet-menu">
               {formatAddress(address)}
               <ChevronDown size={22} style={{ transform: isMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
             </button>
+            
             {isMenuOpen && (
               <div className="wallet-menu">
+                {isIssuer && (
+                  <button className="wallet-menu-item mobile-only" onClick={() => { onIssueCredential(); setIsMenuOpen(false); }}>
+                    <Award size={16} />
+                    <span>Issue Credential</span>
+                  </button>
+                )}
                 <button className="wallet-menu-item" onClick={() => { copyToClipboard(address); }}>
                   {copied ? <Check size={16} /> : <Copy size={16} />}
                   <span>{copied ? 'Copied!' : 'Copy Address'}</span>

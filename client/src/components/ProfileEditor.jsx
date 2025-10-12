@@ -9,7 +9,6 @@ import { StepIndicator } from './ui/StepIndicator';
 
 import { User, Mail, Globe, Briefcase, Code, Hash, Link as LinkIcon, Building, ArrowRight, ArrowLeft, Loader, Save, X, Twitter, Github, Linkedin, GraduationCap, FileText, Calendar, Users, Flag } from 'lucide-react';
 
-// FIXED: This function now correctly pre-fills the form
 const getInitialValues = (existingProfile) => {
   const defaultValues = {
     firstName: "", middleName: "", lastName: "", username: "",
@@ -24,15 +23,12 @@ const getInitialValues = (existingProfile) => {
 
   let initialData = { ...defaultValues };
 
-  // Prioritize existing profile data
   if (existingProfile) {
     initialData = { ...initialData, ...existingProfile };
-    // Convert date string back to Date object for the form
     if (existingProfile.dateOfBirth) {
       initialData.dateOfBirth = new Date(existingProfile.dateOfBirth);
     }
   } else {
-    // Fallback to saved draft for new profiles
     const savedDraft = localStorage.getItem('profileDraft');
     if (savedDraft) {
       try {
@@ -69,7 +65,6 @@ export default function ProfileEditor({ existingProfile, onSubmit, onCancel, loa
     }
   }, [debouncedData, isNewProfile]);
 
-  // FIXED: Pass the entire data object to the parent submit handler
   const handleFinalSubmit = (data) => {
     onSubmit(data); 
     if (isNewProfile) {

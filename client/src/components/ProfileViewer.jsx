@@ -1,14 +1,12 @@
 // src/components/ProfileViewer.jsx
-import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint, Edit } from 'lucide-react';
+import { User, Mail, Globe, Briefcase, GraduationCap, Github, Linkedin, Twitter, Code, Building, ExternalLink, FileText, Calendar, Users, Flag, Lock, Fingerprint, Edit, Award, CheckCircle, XCircle, AlertTriangle, Trash2, Loader } from 'lucide-react';
 
-// NEW: Helper to extract CID from a full IPFS gateway URL
 const extractCidFromUrl = (url) => {
   if (!url || typeof url !== 'string') return '';
   const parts = url.split('/');
   return parts.pop() || '';
 };
 
-// NEW: A component to display info items cleanly, with placeholders for empty values
 const InfoItem = ({ icon: Icon, label, value, isLink = false, isHash = false, isDate = false, placeholder = "Not provided" }) => {
   let displayValue = value;
 
@@ -39,7 +37,7 @@ const InfoItem = ({ icon: Icon, label, value, isLink = false, isHash = false, is
   );
 };
 
-export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress, pinataJwt }) {
+export default function ProfileViewer({ profile, onEdit, publicKey, walletAddress, pinataJwt, credentials, onRevokeCredential, revokingId }) {
   const hasProfessionalInfo = profile.jobTitle || profile.organization || profile.workExperience || profile.skills || profile.resume || profile.portfolio;
   const hasEducationalInfo = profile.highestQualification || profile.institutionName || profile.graduationYear || profile.certifications;
   const hasSocialInfo = profile.linkedin || profile.github || profile.twitter || profile.blog;
@@ -49,7 +47,6 @@ export default function ProfileViewer({ profile, onEdit, publicKey, walletAddres
     if (!url || !pinataJwt || !url.includes('mypinata.cloud')) {
       return url;
     }
-    // Ensure the URL is absolute before adding the token
     const absoluteUrl = url.startsWith('http') ? url : `https://${url}`;
     return `${absoluteUrl}?pinataGatewayToken=${pinataJwt}`;
   };
@@ -138,6 +135,52 @@ export default function ProfileViewer({ profile, onEdit, publicKey, walletAddres
           <InfoItem icon={Code} label="Profile CID" value={profile.ipfsCid} isHash />
           <InfoItem icon={Code} label="Photo CID" value={extractCidFromUrl(profile.profilePhoto)} isHash />
         </div>
+        
+        {credentials && credentials.length > 0 && (
+          <div className="info-card">
+            <h3><Award size={20} /> Verifiable Credentials</h3>
+            {credentials.map((cred) => (
+              <div key={cred.credentialId} className="credential-entry">
+                <div className="credential-header">
+                  <div className="credential-title">
+                    <Award size={18} />
+                    <strong>{cred.name}</strong>
+                  </div>
+                  <a href={cred.url} target="_blank" rel="noopener noreferrer" className="credential-link">
+                    View <ExternalLink size={14} />
+                  </a>
+                </div>
+                <div className="credential-details">
+                  <div className="credential-status">
+                    {cred.revoked ? (
+                      <span className="status-revoked"><XCircle size={14} /> Revoked</span>
+                    ) : cred.expired ? (
+                      <span className="status-expired"><AlertTriangle size={14} /> Expired</span>
+                    ) : (
+                      <span className="status-active"><CheckCircle size={14} /> Active</span>
+                    )}
+                  </div>
+                  <div className="credential-issuer">
+                    <span>Issued by:</span>
+                    <span className="monospace">{`${cred.issuer.slice(0, 6)}...${cred.issuer.slice(-4)}`}</span>
+                  </div>
+                </div>
+                {!cred.revoked && (
+                  <div className="credential-footer">
+                    <button 
+                      className="credential-revoke-btn" 
+                      onClick={() => onRevokeCredential(cred.credentialId)}
+                      disabled={revokingId === cred.credentialId}
+                    >
+                      {revokingId === cred.credentialId ? <Loader size={14} className="spinner" /> : <Trash2 size={14} />}
+                      <span>{revokingId === cred.credentialId ? 'Revoking...' : 'Revoke'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

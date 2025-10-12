@@ -1,18 +1,20 @@
 // src/App.jsx
 import toast, { Toaster } from 'react-hot-toast';
 import { createWeb3Modal, useWeb3Modal, useWeb3ModalAccount, useWeb3ModalProvider, useDisconnect } from '@web3modal/ethers/react';
-import { BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract, ethers } from 'ethers';
 import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import { Loader, ExternalLink, User, Sparkles } from 'lucide-react';
-
+import { Loader, ExternalLink, User, Sparkles, Mail } from 'lucide-react';
 import { uploadProfileToIPFS, uploadFileToIPFS } from './services/ipfs';
-import { contractAddress, contractABI, sepoliaRpc, projectId } from './config';
+import { contractAddress, contractABI, sepoliaRpc, projectId, credentialContractAddress, credentialContractABI, credentialRequestAddress, credentialRequestABI } from './config';
 import Header from './components/Header';
 import WelcomeScreen from './components/WelcomeScreen';
 import ProfileViewer from './components/ProfileViewer';
 import ProfileEditor from './components/ProfileEditor';
-import HowToUse from './components/HowToUse'; // Import the new component
+import HowToUse from './components/HowToUse'; 
+import IssueCredential from './components/IssueCredential';
+import RequestCredential from './components/RequestCredential';
+import IssuerDashboard from './components/IssuerDashboard';
 
 // --- Web3Modal Configuration ---
 const sepolia = { chainId: 11155111, name: 'Sepolia', currency: 'SEP', explorerUrl: 'https://sepolia.etherscan.io', rpcUrl: sepoliaRpc };
@@ -41,7 +43,14 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [publicKey, setPublicKey] = useState(null);
-  const [view, setView] = useState('welcome'); // 'welcome', 'howToUse', 'app'
+  const [credentialContract, setCredentialContract] = useState(null);
+  const [credentials, setCredentials] = useState([]);
+  const [isIssuer, setIsIssuer] = useState(false);
+  const [requestContract, setRequestContract] = useState(null);
+  const [view, setView] = useState('welcome');
+  const [requestToIssue, setRequestToIssue] = useState(null);
+  const [refreshCredentials, setRefreshCredentials] = useState(false);
+  const [revokingId, setRevokingId] = useState(null);
 
   const isNewProfile = useMemo(() => profile === null && isConnected, [profile, isConnected]);
 
@@ -49,9 +58,27 @@ export default function App() {
   useEffect(() => {
     if (isConnected && walletProvider) {
       const provider = new BrowserProvider(walletProvider);
-      provider.getSigner().then(signer => {
+      // Add 'async' here
+      provider.getSigner().then(async (signer) => { 
         setContract(new Contract(contractAddress, contractABI, signer));
-        setPublicKey(signer.address); // Public key is the wallet address
+        setPublicKey(signer.address);
+
+        const registryContract = new Contract(credentialContractAddress, credentialContractABI, signer);
+        setCredentialContract(registryContract);
+        const reqContract = new Contract(credentialRequestAddress, credentialRequestABI, signer);
+        setRequestContract(reqContract);
+
+        try {
+            const issuerInfo = await registryContract.issuers(address); 
+            if (issuerInfo.isIssuer) {
+                setIsIssuer(true);
+            } else {
+                setIsIssuer(false);
+            }
+        } catch (error) {
+            console.error("Could not check issuer status:", error);
+            setIsIssuer(false);
+        }
       });
     } else {
       setContract(null);
@@ -60,8 +87,11 @@ export default function App() {
       localStorage.removeItem('userProfile');
       setLoading(false);
       setView('welcome');
+      setCredentialContract(null);
+      setCredentials([]);
+      setIsIssuer(false);
     }
-  }, [isConnected, walletProvider]);
+  }, [isConnected, walletProvider, address]);
 
   useEffect(() => {
     const getProfile = async () => {
@@ -108,10 +138,65 @@ export default function App() {
     getProfile();
   }, [contract, address]);
 
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      if (credentialContract && address) {
+        setLoading(true);
+        try {
+          const issuedFilter = credentialContract.filters.CredentialIssued(null, null, address);
+          const issuedEvents = await credentialContract.queryFilter(issuedFilter);
+          
+          const userCredentials = await Promise.all(issuedEvents.map(async (event) => {
+            const cred = await credentialContract.credentials(event.args.credentialId);
+            const [revoked, expired] = await credentialContract.getCredentialStatus(event.args.credentialId);
+            
+            const credentialUrl = `${import.meta.env.VITE_DEDICATED_GATEWAY_URL}/ipfs/${cred.ipfsHash}?pinataGatewayToken=${PINATA_JWT}`;
+
+            let credentialName = 'Unnamed Credential';
+            try {
+              const response = await axios.get(credentialUrl);
+              credentialName = response.data?.credentialSubject?.degree?.name || credentialName;
+            } catch (e) {
+              console.warn(`Could not fetch credential data for hash: ${cred.ipfsHash}`, e);
+            }
+
+            return {
+              credentialId: event.args.credentialId,
+              name: credentialName,
+              schemaId: ethers.decodeBytes32String(event.args.schemaId),
+              issuer: cred.issuer,
+              ipfsHash: cred.ipfsHash,
+              url: credentialUrl,
+              revoked,
+              expired,
+            };
+          }));
+
+          setCredentials(userCredentials);
+        } catch (error) {
+          console.error("Could not fetch credentials:", error);
+          toast.error("Failed to load your credentials.");
+        } finally {
+            setLoading(false);
+        }
+      }
+    };
+
+    fetchCredentials();
+  }, [credentialContract, address, refreshCredentials]);
+
   // --- Handlers ---
   const handleDisconnect = () => {
     disconnect();
   };
+  const handleApproveAndIssue = (request) => {
+    setRequestToIssue({
+        subject: request.subject,
+        schemaName: request.schemaName,
+        requestId: request.id
+    });
+    setView('issueCredential');
+};
   
   const handleSubmitProfile = async (validatedProfileData) => {
     setLoading(true);
@@ -143,8 +228,8 @@ export default function App() {
       toast.loading('Saving profile data to IPFS...', { id: toastId });
       
       const fullProfileData = {
-        ...(profile || {}), // Start with the old profile data as a base
-        ...dataToUpload,   // Overwrite it with all the new data from the form
+        ...(profile || {}),
+        ...dataToUpload,   
         fullName,
         did: `did:ethr:${address}`,
         updatedAt: new Date().toISOString(),
@@ -193,6 +278,31 @@ export default function App() {
     }
   };
 
+  const handleRevokeCredential = async (credentialId) => {
+    if (!credentialContract) return;
+
+    setRevokingId(credentialId);
+    const toastId = toast.loading('Submitting revocation transaction...');
+
+    try {
+      const tx = await credentialContract.revokeCredential(credentialId);
+      await tx.wait();
+
+      toast.success('Credential revoked successfully!', { id: toastId });
+      setRefreshCredentials(prev => !prev); 
+
+    } catch (err) {
+      console.error("Failed to revoke credential:", err);
+      let errorMessage = 'Revocation failed.';
+      if (err.code === 'ACTION_REJECTED' || err.code === 4001) {
+        errorMessage = 'Transaction rejected.';
+      }
+      toast.error(errorMessage, { id: toastId });
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
   // --- Render Logic ---
   const renderContent = () => {
     if (view === 'howToUse') {
@@ -202,8 +312,6 @@ export default function App() {
     if (!isConnected) {
       return <WelcomeScreen onConnect={() => open()} onHowToUse={() => setView('howToUse')} />;
     }
-
-    // MODIFIED: Show loading screen if loading the initial profile OR if a transaction is processing
     if (loading && (!profile || txHash)) {
       return (
         <div className="loading-screen">
@@ -218,6 +326,28 @@ export default function App() {
       );
     }
 
+    if (view === 'issueCredential') {
+    return (
+      <div className="form-container">
+        <IssueCredential 
+            contract={credentialContract} 
+            requestContract={requestContract}
+            issuerAddress={address}
+            prefillData={requestToIssue} 
+            onCredentialIssued={() => {
+                setView('app');
+                setRequestToIssue(null);
+                setRefreshCredentials(prev => !prev);
+            }} 
+            onCancel={() => {
+                setView('app');
+                setRequestToIssue(null);
+            }}
+        />
+      </div>
+    );
+}
+
     if (isEditing) {
       return (
         <ProfileEditor 
@@ -229,9 +359,47 @@ export default function App() {
         />
       );
     }
+
+    if (view === 'requestCredential') {
+        return <RequestCredential requestContract={requestContract} onCancel={() => setView('app')} onRequested={() => setView('app')} />;
+    }
+
+    if (view === 'issuerDashboard') {
+    return <IssuerDashboard 
+        requestContract={requestContract} 
+        address={address} 
+        onBack={() => setView('app')} 
+        onApproveAndIssue={handleApproveAndIssue} 
+    />;
+}
     
     if (profile) {
-      return <ProfileViewer profile={profile} onEdit={() => setIsEditing(true)} publicKey={publicKey} walletAddress={address} pinataJwt={PINATA_JWT}/>;
+      return (
+        <>
+            <div className="top-actions">
+              <button onClick={() => setView('requestCredential')} className="btn-secondary">
+                <Mail size={16} />
+                <span>Request a Credential</span>
+              </button>
+              {isIssuer && (
+                  <button onClick={() => setView('issuerDashboard')} className="btn-primary">
+                      <Mail size={16} />
+                      <span>View Requests</span>
+                  </button>
+              )}
+            </div>
+            <ProfileViewer 
+                profile={profile} 
+                onEdit={() => setIsEditing(true)} 
+                publicKey={publicKey} 
+                walletAddress={address} 
+                pinataJwt={PINATA_JWT}
+                credentials={credentials} 
+                onRevokeCredential={handleRevokeCredential}
+                revokingId={revokingId} 
+            />
+        </>
+      );
     }
 
     if(isConnected && !isNewProfile && !loading) {
@@ -269,7 +437,7 @@ export default function App() {
         <div className="gradient-orb orb-2"></div>
         <div className="gradient-orb orb-3"></div>
       </div>
-      <Header isConnected={isConnected} address={address} onConnect={() => open()} onDisconnect={handleDisconnect} />
+      <Header isConnected={isConnected} address={address} onConnect={() => open()} onDisconnect={handleDisconnect} isIssuer={isIssuer} onIssueCredential={() => setView('issueCredential')} />
       <main className="main-content">
         {renderContent()}
       </main>

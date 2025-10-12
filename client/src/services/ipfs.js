@@ -11,8 +11,15 @@ const PINATA_FILE_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 export const uploadProfileToIPFS = async (profileData) => {
   if (!profileData) throw new Error("Profile data is required.");
 
+  const pinataData = {
+    pinataContent: profileData,
+    pinataMetadata: {
+      name: `DecentraID Content - ${new Date().toISOString()}`,
+    },
+  };
+
   try {
-    const { data } = await axios.post(PINATA_JSON_URL, profileData, {
+    const { data } = await axios.post(PINATA_JSON_URL, pinataData, { 
       headers: {
         'Content-Type': 'application/json',
         'pinata_api_key': PINATA_API_KEY,
@@ -41,7 +48,6 @@ export const uploadFileToIPFS = async (file) => {
             }
         });
         
-        // Returns a dedicated gateway URL, consistent with App.jsx
         return `${DEDICATED_GATEWAY_URL}/ipfs/${data.IpfsHash}?pinataGatewayToken=${PINATA_JWT}`;
     } catch (error) {
         console.error("Error uploading file to IPFS:", error.response?.data || error.message);
