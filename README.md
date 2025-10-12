@@ -1,6 +1,6 @@
 # DecentraID - Decentralized Digital Identity Management
 
-A blockchain-based Self-Sovereign Identity (SSI) solution built on Ethereum that empowers users to create, manage, and own their digital identity without reliance on centralized intermediaries. DecentraID combines the immutability of blockchain with the privacy and scalability of IPFS to create a truly decentralized identity management system.
+A blockchain-based Self-Sovereign Identity (SSI) solution built on Ethereum that empowers users to create, manage, and own their digital identity without reliance on centralized intermediaries. DecentraID combines the immutability of blockchain with the privacy and scalability of IPFS to create a truly decentralized identity management system, now featuring **W3C Verifiable Credentials** for tamper-proof digital attestations.
 
 ![Ethereum](https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white)
 ![IPFS](https://img.shields.io/badge/IPFS-65C2CB?style=for-the-badge&logo=ipfs&logoColor=white)
@@ -19,11 +19,11 @@ A blockchain-based Self-Sovereign Identity (SSI) solution built on Ethereum that
 - [Configuration](#-configuration)
 - [Running the Project](#-running-the-project)
 - [Testing](#-testing)
-- [Deployment](#-deployment)
 - [Usage Guide](#-usage-guide)
 - [Project Structure](#-project-structure)
 - [Smart Contract Details](#-smart-contract-details)
 - [IPFS Integration](#-ipfs-integration)
+- [Verifiable Credentials](#-verifiable-credentials)
 - [Security & Privacy](#-security--privacy-considerations)
 - [Future Enhancements](#-future-enhancements)
 - [License](#-license)
@@ -36,6 +36,7 @@ Traditional digital identity systems are centralized, creating vulnerabilities a
 - **Data sovereignty** - You control what information is shared and with whom
 - **Censorship-resistant** - Built on blockchain technology for immutability
 - **Transparent** - All operations are verifiable on the blockchain
+- **Verifiable Credentials** - Trusted issuers can attest to your qualifications and achievements
 
 ### Problem Statement
 
@@ -44,28 +45,44 @@ Current digital identity systems suffer from:
 - ❌ Data silos preventing identity portability
 - ❌ Centralized databases as targets for large-scale breaches
 - ❌ Privacy concerns with data monetization
+- ❌ Difficulty verifying credentials without contacting issuers
 
 ### Our Solution
 
-✅ Self-Sovereign Identity (SSI) using Ethereum and IPFS.  
-✅ Cryptographic wallet-based authentication.  
-✅ User-controlled creation and updates of a rich, off-chain profile.  
-✅ An immutable on-chain registry that stores only a content-addressed hash (IPFS CID).
+✅ Self-Sovereign Identity (SSI) using Ethereum and IPFS  
+✅ Cryptographic wallet-based authentication  
+✅ User-controlled creation and updates of a rich, off-chain profile  
+✅ An immutable on-chain registry that stores only content-addressed hashes (IPFS CID)  
+✅ W3C-compliant Verifiable Credentials for trusted attestations  
+✅ Decentralized credential issuance, verification, and revocation  
 
 ## ✨ Features
 
+### Core Identity Management
 - 🔐 **Multi-Wallet Support** - Connect using MetaMask or any WalletConnect-compatible wallet
 - 🖼️ **Rich Profile Management** - Create comprehensive profiles with personal, professional, educational, and social information
-- 📝 **Identity Updates** - Seamlessly update your profile by uploading new data to IPFS
+- 🔄 **Identity Updates** - Seamlessly update your profile by uploading new data to IPFS
 - 💾 **Decentralized Storage** - All profile data stored on IPFS for privacy and cost-efficiency
-- 📄 **File Uploads** - Support for profile photos, resumes, and identity documents
+- 📁 **File Uploads** - Support for profile photos, resumes, and identity documents
 - 🔗 **On-Chain Verification** - Smart contract stores only IPFS hashes as immutable pointers
 - 🌐 **Fully Decentralized** - No central authority with all operations verifiable on blockchain
+
+### Verifiable Credentials (W3C Standard)
+- 🪪 **Issue Credentials** - Authorized issuers can create and issue verifiable credentials (degrees, certificates, licenses)
+- 📜 **W3C Compliance** - Credentials follow W3C Verifiable Credentials Data Model
+- ✅ **Credential Verification** - On-chain registry for instant verification without contacting issuer
+- 🔄 **Request System** - Users can request credentials from registered issuers
+- 📋 **Issuer Dashboard** - Dedicated interface for issuers to manage credential requests
+- 🚫 **Revocation Support** - Both issuers and subjects can revoke credentials
+- ⏰ **Expiration Tracking** - Automatic detection of expired credentials
+- 🎯 **Status Display** - Real-time credential status (Active, Revoked, Expired)
+
+### User Experience
 - 🎨 **Modern UI/UX** - Beautiful, responsive interface with dark mode
 - 📱 **Mobile Responsive** - Works seamlessly across all devices
 - ⚡ **Form Validation** - Real-time validation with Zod schema
 - 💫 **Step-by-Step Wizard** - Intuitive 6-step profile creation process
-- 🔄 **Auto-Save Drafts** - Automatically saves form progress for new profiles
+- 📝 **Auto-Save Drafts** - Automatically saves form progress for new profiles
 - 📊 **Comprehensive Profile View** - Display all identity information with CID verification
 
 ## 🛠 Technology Stack
@@ -76,8 +93,8 @@ Current digital identity systems suffer from:
 - **Hardhat 2.26** - Development environment for testing and deployment
 
 ### Off-Chain Storage
-- **IPFS (InterPlanetary File System)** - A peer-to-peer network for storing and sharing data in a distributed file system.
-- **Pinata** - An IPFS pinning service used to ensure the profile data remains available on the IPFS network.
+- **IPFS (InterPlanetary File System)** - A peer-to-peer network for storing and sharing data
+- **Pinata** - IPFS pinning service ensuring data availability
 
 ### Frontend
 - **React.js 19.1** - Modern UI framework with hooks
@@ -90,53 +107,281 @@ Current digital identity systems suffer from:
 - **Lucide React 0.545** - Beautiful & consistent icons
 - **React Hot Toast 2.6** - Elegant toast notifications
 
-### Development Tools
-- **Node.js** - JavaScript runtime
-- **Chai 4.5** - Testing assertion library
-- **dotenv 17.2** - Environment variable management
-- **ESLint 9.36** - Code quality and consistency
-
 ## 🏗 System Architecture
 
-The updated architecture separates on-chain logic from off-chain data, providing a scalable and private solution.
+The updated architecture separates on-chain logic from off-chain data, providing a scalable and private solution with support for verifiable credentials.
+
+### High-Level Architecture
 
 ```
-┌─────────────────┐             ┌─────────────────┐
-│   User (You)    │             │   Pinata API    │
-└────────┬────────┘             └────────┬────────┘
-          │                               │
-          ▼                               ▼ (Upload JSON)
-┌─────────────────┐             ┌─────────────────┐
-│    MetaMask     │             │      IPFS       │
-│   (Wallet)      │             │ (Decentralized  │
-└────────┬────────┘             │     Storage)    │
-          │                      └────────┬────────┘
-          ▼ (Sign Tx)                     │ (Returns Hash)
-┌─────────────────┐                      │
-│   React DApp    │──────────────────────┘
-│   (Frontend)    │  (1. Upload data, get hash)
-│                 │  (2. Send tx with hash)
-└────────┬────────┘
-          │
-          ▼ (Transaction with IPFS Hash)
-┌─────────────────┐
-│   Ethereum      │ ◄── Stores only the IPFS hash
-│   Blockchain    │     Smart Contract Logic
-│  (Sepolia Net)  │     Verifiable Ownership
-└─────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                          USER INTERFACE LAYER                     │
+│                                                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
+│  │   Profile    │  │  Credential  │  │    Issuer    │             │
+│  │   Editor     │  │   Request    │  │  Dashboard   │             │
+│  └──────────────┘  └──────────────┘  └──────────────┘             │
+│                                                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
+│  │   Profile    │  │    Issue     │  │   How To     │             │
+│  │   Viewer     │  │  Credential  │  │     Use      │             │
+│  └──────────────┘  └──────────────┘  └──────────────┘             │
+└────────────────────────────┬──────────────────────────────────────┘
+                             │
+                             ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                        BLOCKCHAIN LAYER                           │
+│                                                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐             │
+│  │   Identity   │  │  Credential  │  │  Credential  │             │
+│  │   Contract   │  │   Registry   │  │   Request    │             │
+│  │              │  │   Contract   │  │   Contract   │             │
+│  │ - Create     │  │ - Add Issuer │  │ - Create Req │             │
+│  │ - Update     │  │ - Issue Cred │  │ - Approve    │             │
+│  │ - Store CID  │  │ - Revoke     │  │ - Reject     │             │
+│  └──────────────┘  └──────────────┘  └──────────────┘             │
+│                                                                   │
+│              Ethereum Blockchain (Sepolia Testnet)                │
+└────────────────────────────┬──────────────────────────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                      STORAGE LAYER (IPFS)                          │
+│                                                                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
+│  │   Profile    │  │  Credential  │  │    Files     │              │
+│  │     JSON     │  │     JSON     │  │  (Photos,    │              │
+│  │              │  │  (W3C Comp)  │  │  Documents)  │              │
+│  └──────────────┘  └──────────────┘  └──────────────┘              │
+│                                                                    │
+│                    IPFS via Pinata Service                         │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow for Creating/Updating Identity
+### Component Interaction Diagram
 
-1. **User Input** → User completes the 6-step profile wizard with personal, contact, professional, educational, social, and identity information
-2. **File Uploads** → Files (profile photo, resume, documents) are uploaded to IPFS via Pinata and return dedicated gateway URLs
-3. **JSON Compilation** → All form data, including IPFS file URLs, is compiled into a comprehensive JSON object
-4. **Profile Upload** → The complete JSON profile is uploaded to IPFS, returning a unique Content Identifier (CID)
-5. **Transaction Creation** → Ethers.js creates a transaction to call `createIdentity` or `updateIdentity` with only the profile CID
-6. **User Signature** → MetaMask prompts user to sign and broadcast the transaction to Sepolia
-7. **Smart Contract Update** → Contract validates and stores the new CID, linking it to the user's wallet address
-8. **Local Caching** → DApp caches the profile locally for faster subsequent loads
-9. **Profile Display** → User can view their complete profile by fetching data from IPFS using the stored CID
+```
+┌─────────────┐
+│    User     │
+│  (Wallet)   │
+└──────┬──────┘
+       │
+       │ 1. Connect Wallet
+       ▼
+┌───────────────────────────────────────────────────────────────┐
+│                         React DApp                            │
+│                                                               │
+│  ┌────────────────┐    ┌────────────────┐    ┌──────────────┐ │
+│  │   Web3Modal    │───▶│   Ethers.js    │───▶│   MetaMask   │ │
+│  │  (Connection)  │    │  (Blockchain)  │    │  (Signing)   │ │
+│  └────────────────┘    └────────────────┘    └──────────────┘ │
+│                                                               │
+│  ┌────────────────┐    ┌────────────────┐                     │
+│  │  IPFS Service  │───▶│  Pinata API    │                     │
+│  │ (Upload/Fetch) │    │  (Pin Files)   │                     │
+│  └────────────────┘    └────────────────┘                     │
+└───────────────────────────────────────────────────────────────┘
+       │                         │                       │
+       │                         │                       │
+       ▼                         ▼                       ▼
+┌─────────────┐         ┌─────────────┐        ┌─────────────┐
+│  Identity   │         │ Credential  │        │ Credential  │
+│  Contract   │         │  Registry   │        │   Request   │
+└─────────────┘         └─────────────┘        └─────────────┘
+       │                         │                       │
+       │                         ▼                       │
+       │                  ┌─────────────┐                │
+       │                  │   Issuer    │                │
+       │                  │  Approval   │                │
+       │                  └─────────────┘                │
+       │                         │                       │
+       └─────────────────────────┴───────────────────────┘
+                                 │
+                                 ▼
+                         ┌─────────────┐
+                         │    IPFS     │
+                         │  (Storage)  │
+                         └─────────────┘
+```
+
+### Data Flow Diagrams
+
+#### 1. Identity Creation Flow
+
+```
+┌──────┐                                                  ┌──────────┐
+│ User │                                                  │ MetaMask │
+└───┬──┘                                                  └────┬─────┘
+    │                                                          │
+    │ 1. Fill Profile Form                                     │
+    │ ──────────────────────────────────────-──┐               │
+    │                                          │               │
+    │ 2. Upload Files (Photo, Resume, Docs)    │               │
+    ├───────────────────────────────────────-──┼───────────────┤
+    │                                          │               │
+    │              ┌──────────────────────┐    │               │
+    │              │   Pinata/IPFS        │◀───┘               │
+    │              │   Returns File URLs  │                    │
+    │              └──────────────────────┘                    │
+    │                        │                                 │
+    │ 3. Compile Complete JSON with File URLs                  │
+    │ ─────────────────────────────────────-───┐               │
+    │                                          │               │
+    │ 4. Upload JSON to IPFS                   │               │
+    ├──────────────────────────────────────────┼───────────────┤
+    │                                          │               │
+    │              ┌──────────────────────┐    │               │
+    │              │   Pinata/IPFS        │◀───┘               │
+    │              │   Returns CID        │                    │
+    │              └──────────────────────┘                    │
+    │                        │                                 │
+    │ 5. Call createIdentity(CID)                              │
+    ├──────────────────────────────────────────────────────────▶
+    │                                                          │
+    │ 6. Sign Transaction                                      │
+    │ ◀─────────────────────────────────────────────────────────
+    │                                                          │
+    │ 7. Broadcast to Blockchain                               │
+    ├──────────────────────────────────────────┐               │
+    │                                          │               │
+    │           ┌─────────────────────┐        │               │
+    │           │  Identity Contract  │◀───────┘               │
+    │           │  Stores CID         │                        │
+    │           └─────────────────────┘                        │
+    │                        │                                 │
+    │ 8. Transaction Confirmed                                 │
+    │ ◀──────────────────────┘                                 │
+    │                                                          │
+    │ 9. Profile Cached Locally                                │
+    │ ────────────────────────────────────────┐                │
+    │                                         │                │
+    │ 10. Display Profile                     │                │
+    └─────────────────────────────────────────┘                │
+```
+
+#### 2. Verifiable Credential Issuance Flow
+
+```
+┌──────────┐        ┌──────────┐        ┌──────────┐        ┌──────────┐
+│  Subject │        │  Issuer  │        │ Contract │        │   IPFS   │
+│  (User)  │        │          │        │ Registry │        │          │
+└────┬─────┘        └────┬─────┘        └────┬─────┘        └────┬─────┘
+     │                   │                   │                   │
+     │ 1. Request        │                   │                   │
+     │   Credential      │                   │                   │
+     ├──────────────────▶│                   │                   │
+     │                   │                   │                   │
+     │                   │ 2. Review Request │                   │
+     │                   │ ────────────────┐ │                   │
+     │                   │                 │ │                   │
+     │                   │ 3. Approve      │ │                   │
+     │                   │ ◀───────────────┘ │                   │
+     │                   │                   │                   │
+     │                   │ 4. Create W3C     │                   │
+     │                   │    Credential     │                   │
+     │                   │    JSON           │                   │
+     │                   │ ────────────────┐ │                   │
+     │                   │                 │ │                   │
+     │                   │ 5. Upload to    │ │                   │
+     │                   │    IPFS         │ │                   │
+     │                   ├─────────────────┼─┼──────────────────▶│
+     │                   │                 │ │                   │
+     │                   │ 6. Returns CID  │ │                   │
+     │                   │◀────────────────┼─┼───────────────────│
+     │                   │                 │ │                   │
+     │                   │ 7. Issue        │ │                   │
+     │                   │    Credential   │ │                   │
+     │                   ├─────────────────┼─▶                   │
+     │                   │                 │ │                   │
+     │                   │                 │ │ 8. Store          │
+     │                   │                 │ │    Metadata       │
+     │                   │                 │ │    & CID          │
+     │                   │                 │ │ ────────────────┐ │
+     │                   │                 │ │                 │ │
+     │                   │ 9. Emit Event   │ │                 │ │
+     │                   │◀────────────────┼─┤◀────────────────┘ │
+     │                   │                 │ │                   │
+     │ 10. Notification  │                 │ │                   │
+     │◀──────────────────┤                 │ │                   │
+     │                   │                 │ │                   │
+     │ 11. Fetch         │                 │ │                   │
+     │     Credential    │                 │ │                   │
+     ├─────────────────────────────────────┼─┼──────────────────▶│
+     │                   │                 │ │                   │
+     │ 12. Display in    │                 │ │                   │
+     │     Profile       │                 │ │                   │
+     │◀────────────────────────────────────┼─┼───────────────────│
+     │                   │                 │ │                   │
+```
+
+#### 3. Credential Verification Flow
+
+```
+┌──────────┐        ┌──────────┐        ┌──────────┐        ┌──────────┐
+│ Verifier │        │  Subject │        │ Contract │        │   IPFS   │
+│          │        │  (User)  │        │ Registry │        │          │
+└────┬─────┘        └────┬─────┘        └────┬─────┘        └────┬─────┘
+     │                   │                   │                   │
+     │ 1. Request        │                   │                   │
+     │    Credential     │                   │                   │
+     │    Proof          │                   │                   │
+     ├──────────────────▶│                   │                   │
+     │                   │                   │                   │
+     │                   │ 2. Share          │                   │
+     │                   │    Credential ID  │                   │
+     │◀──────────────────│    or CID         │                   │
+     │                   │                   │                   │
+     │ 3. Verify Status  │                   │                   │
+     │    On-Chain       │                   │                   │
+     ├───────────────────────────────────────▶                   │
+     │                   │                   │                   │
+     │ 4. Return Status  │                   │                   │
+     │    (Active/       │                   │                   │
+     │     Revoked/      │                   │                   │
+     │     Expired)      │                   │                   │
+     │◀──────────────────────────────────────│                   │
+     │                   │                   │                   │
+     │ 5. Fetch Full     │                   │                   │
+     │    Credential     │                   │                   │
+     │    from IPFS      │                   │                   │
+     ├───────────────────────────────────────────────────────────▶
+     │                   │                   │                   │
+     │ 6. Return         │                   │                   │
+     │    Credential     │                   │                   │
+     │    JSON           │                   │                   │
+     │◀──────────────────────────────────────────────────────────│
+     │                   │                   │                   │
+     │ 7. Verify         │                   │                   │
+     │    - Issuer Sig   │                   │                   │
+     │    - Content Hash │                   │                   │
+     │    - Expiration   │                   │                   │
+     │ ────────────────┐ │                   │                   │
+     │                 │ │                   │                   │
+     │ 8. Accept/      │ │                   │                   │
+     │    Reject       │ │                   │                   │
+     │◀────────────────┘ │                   │                   │
+     │                   │                   │                   │
+```
+
+### Security & Access Control
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      ACCESS CONTROL MATRIX                      │
+├──────────────┬──────────┬──────────┬──────────┬─────────────────┤
+│   Action     │   User   │  Issuer  │  Owner   │    Verifier     │
+├──────────────┼──────────┼──────────┼──────────┼─────────────────┤
+│ Create ID    │    ✅    │    ✅     │    ✅    │       ✅        │
+│ Update ID    │    ✅    │    ❌     │    ❌    │       ❌        │
+│ View ID      │    ✅    │    ✅     │    ✅    │       ✅        │
+│ Add Issuer   │    ❌    │    ❌     │    ✅    │       ❌        │
+│ Issue Cred   │    ❌    │    ✅     │    ❌    │       ❌        │
+│ Revoke Cred  │  ✅(own) │ ✅(iss)   │    ❌    │       ❌        │
+│ View Cred    │    ✅    │    ✅     │    ✅    │       ✅        │
+│ Request Cred │    ✅    │    ✅     │    ✅    │       ❌        │
+│ Approve Req  │    ❌    │    ✅     │    ❌    │       ❌        │
+└──────────────┴──────────┴──────────┴──────────┴─────────────────┘
+```
 
 ## 📋 Prerequisites
 
@@ -234,6 +479,10 @@ VITE_PINATA_API_KEY=your_pinata_api_key
 VITE_PINATA_SECRET_KEY=your_pinata_secret_key
 VITE_PINATA_JWT=your_pinata_jwt_token
 VITE_DEDICATED_GATEWAY_URL=https://your-gateway.mypinata.cloud
+
+# Verifiable Credentials Contracts
+VITE_CREDENTIAL_REGISTRY_ADDRESS=0xYourCredentialRegistryAddress
+VITE_CREDENTIAL_REQUEST_ADDRESS=0xYourCredentialRequestAddress
 ```
 
 #### Getting Pinata Credentials
@@ -376,235 +625,166 @@ npx hardhat verify --network sepolia DEPLOYED_CONTRACT_ADDRESS
 
 #### 2. **Create Your Identity**
    
-   Follow the 6-step wizard:
-   
-   **Step 1: Personal Information**
-   - Enter your name (first, middle, last)
-   - Choose a unique username
-   - Add date of birth, gender, and nationality
-   - Upload a profile photo (JPG format, max 5MB)
-   
-   **Step 2: Contact Information**
-   - Provide email address and phone number
-   - Add your residential address
-   
-   **Step 3: Professional Information**
-   - Current job title and organization
-   - Years of work experience
-   - List your skills (e.g., JavaScript, React, Blockchain)
-   - Upload resume (PDF, max 5MB)
-   - Add portfolio URL
-   
-   **Step 4: Educational Information**
-   - Highest qualification achieved
-   - Institution name and graduation year
-   - Any certifications or additional training
-   
-   **Step 5: Social & Online Presence**
-   - LinkedIn, GitHub, Twitter/X profiles
-   - Personal blog or Medium URL
-   
-   **Step 6: Identity Documents**
-   - Select ID type (Aadhaar, Passport, Driver's License, etc.)
-   - Enter ID number (validated based on type)
-   - Upload supporting document (PDF, max 5MB)
+   Follow the 6-step wizard to create your comprehensive digital identity.
 
-#### 3. **Save Your Identity**
-   - Review all information
-   - Click "Create & Save Identity"
-   - Files are uploaded to IPFS (may take a few seconds)
-   - Profile data is compiled and uploaded to IPFS
-   - Approve the transaction in MetaMask
-   - Wait for blockchain confirmation (~15-30 seconds)
-   - View transaction on Etherscan
+#### 3. **Request Verifiable Credentials**
+   - Click "Request a Credential" button
+   - Enter the issuer's wallet address
+   - Specify credential type (e.g., "UniversityDegreeCredential")
+   - Provide reason for request
+   - Submit and wait for issuer approval
 
 #### 4. **View & Manage**
    - Your identity displays automatically after creation
    - All data organized in clean, categorized cards
    - View IPFS CIDs for verification
+   - See your verifiable credentials with status indicators
    - Click "Edit Profile" to update any information
-   - Updates follow the same process, replacing old data
+   - Revoke credentials if needed
 
-#### 5. **Features & Benefits**
-   - **Auto-save**: Form progress saved automatically for new profiles
-   - **Local cache**: Faster loading on subsequent visits
-   - **Privacy**: Only IPFS hash stored on-chain
-   - **Verification**: All CIDs displayed for transparency
-   - **Immutable**: Blockchain provides permanent record
+### For Credential Issuers
 
-### For Developers
+#### 1. **Get Authorized**
+   - Contact the platform administrator
+   - Provide your wallet address
+   - Administrator runs authorization script
+   - Your wallet is now authorized to issue credentials
 
-#### Interact with Contract Using Hardhat Console
+#### 2. **Access Issuer Dashboard**
+   - Connect your authorized wallet
+   - "Issue Credential" button appears in header
+   - Access "View Requests" to see incoming credential requests
 
-```bash
-npx hardhat console --network sepolia
-```
-
-```javascript
-const Identity = await ethers.getContractFactory("Identity");
-const contract = Identity.attach("YOUR_CONTRACT_ADDRESS");
-
-// Get identity
-const identity = await contract.identities("WALLET_ADDRESS");
-console.log(identity);
-```
-
-#### Frontend Integration Example
-
-```javascript
-import { BrowserProvider, Contract } from 'ethers';
-import axios from 'axios';
-
-// Connect to contract
-const provider = new BrowserProvider(window.ethereum);
-const signer = await provider.getSigner();
-const contract = new Contract(contractAddress, contractABI, signer);
-
-// Upload profile to IPFS
-const uploadToIPFS = async (profileData) => {
-  const response = await axios.post(
-    'https://api.pinata.cloud/pinning/pinJSONToIPFS',
-    profileData,
-    {
-      headers: {
-        'pinata_api_key': PINATA_API_KEY,
-        'pinata_secret_api_key': PINATA_SECRET_KEY
-      }
-    }
-  );
-  return response.data.IpfsHash;
-};
-
-// Create identity
-const profileData = {
-  firstName: "John",
-  lastName: "Doe",
-  email: "john@example.com",
-  // ... other fields
-};
-
-const ipfsHash = await uploadToIPFS(profileData);
-const tx = await contract.createIdentity(ipfsHash);
-await tx.wait();
-
-// Read identity
-const identity = await contract.identities(address);
-const profileUrl = `${GATEWAY_URL}/ipfs/${identity.ipfsHash}`;
-const profile = await axios.get(profileUrl);
-console.log(profile.data);
-```
+#### 3. **Issue Credentials**
+   - Click "Approve & Issue" or "Issue Credential"
+   - Fill in credential details
+   - Submit - credential data uploaded to IPFS
+   - Approve blockchain transaction
+   - Credential immediately visible to subject
 
 ## 📁 Project Structure
 
 ```
 decentralized-identity/
-├── contracts/
-│   └── Identity.sol                  # Main smart contract
-├── scripts/
-│   └── deploy.js                     # Deployment script
-├── test/
-│   └── Identity.test.js              # Contract tests
-├── client/                           # React frontend
+│
+├── contracts/                        # Smart Contracts
+│   ├── Identity.sol                  # Main identity smart contract
+│   ├── CredentialRegistry.sol        # Verifiable credentials registry
+│   └── CredentialRequest.sol         # Credential request system
+│
+├── scripts/                          # Deployment & Management Scripts
+│   ├── deploy.js                     # Identity contract deployment
+│   ├── deploy_credentials.js         # CredentialRegistry deployment
+│   ├── deploy_requests.js            # CredentialRequest deployment
+│   └── add_issuer.js                 # Script to authorize credential issuers
+│
+├── test/                             # Smart Contract Tests
+│   └── Identity.test.js              # Identity contract test suite
+│
+├── docs/                             # Documentation
+│   └── verifiable-credentials.md     # VC implementation documentation
+│
+├── client/                           # React Frontend Application
+│   ├── public/                       # Static assets
+│   │
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── Header.jsx           # Navigation header
+│   │   │
+│   │   ├── components/               # React Components
+│   │   │   ├── Header.jsx           # Navigation header with wallet info
 │   │   │   ├── WelcomeScreen.jsx    # Landing page
-│   │   │   ├── HowToUse.jsx         # Instructions
-│   │   │   ├── ProfileEditor.jsx    # Form wizard
-│   │   │   ├── ProfileViewer.jsx    # Profile display
-│   │   │   └── ui/
-│   │   │       ├── FormField.jsx    # Reusable form field
+│   │   │   ├── HowToUse.jsx         # Usage instructions
+│   │   │   ├── ProfileEditor.jsx    # 6-step profile creation wizard
+│   │   │   ├── ProfileViewer.jsx    # Profile display with credentials
+│   │   │   ├── IssueCredential.jsx  # Credential issuance form (issuer)
+│   │   │   ├── RequestCredential.jsx # Credential request form (user)
+│   │   │   ├── IssuerDashboard.jsx  # Issuer request management
+│   │   │   │
+│   │   │   └── ui/                  # Reusable UI Components
+│   │   │       ├── FormField.jsx    # Unified form field component
 │   │   │       └── StepIndicator.jsx # Wizard step indicator
-│   │   ├── hooks/
-│   │   │   ├── useDebounce.js       # Debounce hook
-│   │   │   └── useOnClickOutside.js # Click outside hook
-│   │   ├── schemas/
-│   │   │   └── profileSchema.js     # Zod validation schema
-│   │   ├── services/
-│   │   │   └── ipfs.js              # IPFS/Pinata integration
+│   │   │
+│   │   ├── hooks/                   # Custom React Hooks
+│   │   │   ├── useDebounce.js       # Debounce hook for auto-save
+│   │   │   └── useOnClickOutside.js # Click outside detection
+│   │   │
+│   │   ├── schemas/                 # Validation Schemas
+│   │   │   └── profileSchema.js     # Zod validation schema for profiles
+│   │   │
+│   │   ├── services/                # External Services Integration
+│   │   │   └── ipfs.js              # IPFS/Pinata integration service
+│   │   │
 │   │   ├── App.jsx                  # Main application component
-│   │   ├── config.js                # Contract configuration
-│   │   ├── main.jsx                 # Entry point
-│   │   └── index.css                # Global styles
+│   │   ├── config.js                # Contract addresses & ABIs
+│   │   ├── main.jsx                 # Application entry point
+│   │   └── index.css                # Global styles (Tailwind)
+│   │
 │   ├── index.html                   # HTML template
-│   ├── vite.config.js               # Vite configuration
+│   ├── vite.config.js               # Vite build configuration
 │   ├── eslint.config.js             # ESLint configuration
-│   └── package.json                 # Frontend dependencies
+│   ├── package.json                 # Frontend dependencies
+│   └── .env                         # Frontend environment variables
+│
+├── artifacts/                        # Compiled contract artifacts (generated)
+├── cache/                            # Hardhat cache (generated)
+├── node_modules/                     # Dependencies (generated)
+│
 ├── hardhat.config.js                # Hardhat configuration
 ├── package.json                     # Backend dependencies
+├── .env                             # Root environment variables
 ├── .gitignore                       # Git ignore rules
-├── .env                             # Environment variables (root)
 ├── LICENSE                          # MIT License
-└── README.md                        # This file
+└── README.md                        # Project documentation
 ```
 
-## 🔐 Smart Contract Details
+## 📝 Smart Contract Details
 
 ### Identity.sol
 
-The smart contract has been designed for maximum simplicity and gas efficiency by storing only IPFS hashes on-chain:
+The identity contract stores only IPFS hashes on-chain for gas efficiency:
 
-```solidity
-contract Identity {
-    // Simplified struct storing only the IPFS CID
-    struct UserIdentity {
-        string ipfsHash; // Content Identifier from IPFS
-        bool isCreated;  // Flag indicating identity exists
-    }
-    
-    mapping(address => UserIdentity) public identities;
-    
-    event IdentityCreated(address indexed user, string ipfsHash, uint256 timestamp);
-    event IdentityUpdated(address indexed user, string newIpfsHash, uint256 timestamp);
-    
-    function createIdentity(string memory _ipfsHash) public {
-        require(!identities[msg.sender].isCreated, "Identity already exists");
-        require(bytes(_ipfsHash).length > 0, "IPFS hash cannot be empty");
-        
-        identities[msg.sender] = UserIdentity(_ipfsHash, true);
-        emit IdentityCreated(msg.sender, _ipfsHash, block.timestamp);
-    }
+**Key Functions:**
+- `createIdentity(string _ipfsHash)` - Creates new identity
+- `updateIdentity(string _newIpfsHash)` - Updates existing identity
+- `identities(address)` - View identity data
 
-    function updateIdentity(string memory _newIpfsHash) public {
-        require(identities[msg.sender].isCreated, "No identity found");
-        require(bytes(_newIpfsHash).length > 0, "IPFS hash cannot be empty");
-        
-        identities[msg.sender].ipfsHash = _newIpfsHash;
-        emit IdentityUpdated(msg.sender, _newIpfsHash, block.timestamp);
-    }
-}
-```
+### CredentialRegistry.sol
 
-### Key Functions
+Manages the lifecycle of W3C Verifiable Credentials:
 
-- **`createIdentity(string _ipfsHash)`** - Creates new identity by storing IPFS hash for caller's address
-- **`updateIdentity(string _newIpfsHash)`** - Updates existing identity with new IPFS hash
-- **`identities(address)`** - Public mapping to view any address's identity data
+**Key Functions:**
+- `addIssuer(address, string)` - Authorizes new credential issuer (owner only)
+- `issueCredential(...)` - Issues verifiable credential to subject (issuer only)
+- `revokeCredential(bytes32)` - Revokes credential (issuer or subject)
+- `getCredentialStatus(bytes32)` - Returns credential validity status
 
-### Events
+### CredentialRequest.sol
 
-- **`IdentityCreated(address user, string ipfsHash, uint256 timestamp)`** - Emitted when new identity is created
-- **`IdentityUpdated(address user, string newIpfsHash, uint256 timestamp)`** - Emitted when identity is updated
+Facilitates credential requests between users and issuers:
+
+**Key Functions:**
+- `createRequest(...)` - User requests credential from issuer
+- `approveRequest(uint256)` - Issuer approves request
+- `rejectRequest(uint256)` - Issuer rejects request
+- `getRequestsByIssuer(address)` - Returns all requests for an issuer
 
 ### Security Features
 
+**Identity Contract:**
 - ✅ One identity per address enforcement
-- ✅ IPFS hash validation (non-empty requirement)
 - ✅ No centralized owner/admin control
-- ✅ Immutable once deployed
-- ✅ Public verifiability of all identities
 - ✅ Gas-efficient storage (only CID on-chain)
-- ✅ Event emission for transparency and indexing
 
-### Gas Optimization
+**CredentialRegistry Contract:**
+- ✅ Owner-controlled issuer authorization
+- ✅ Issuer-only credential issuance
+- ✅ Subject/issuer revocation rights
+- ✅ Expiration date tracking
+- ✅ Unique credential IDs
 
-The contract is optimized for minimal gas usage:
-- Only stores a single string (IPFS hash) per user
-- No complex data structures or loops
-- Simple validation checks
-- Estimated gas costs:
-  - Create Identity: ~50,000-70,000 gas
-  - Update Identity: ~30,000-50,000 gas
+**CredentialRequest Contract:**
+- ✅ Validates issuers against registry
+- ✅ Issuer-only approval/rejection
+- ✅ Request status tracking
 
 ## 📦 IPFS Integration
 
@@ -633,6 +813,29 @@ We use Pinata for reliable IPFS pinning:
 - 📈 **Scalability**: No blockchain bloat with large data
 - 🌍 **Availability**: Distributed across global network
 - ✅ **Verifiability**: Content hash ensures data integrity
+
+## 🪪 Verifiable Credentials
+
+DecentraID implements the **W3C Verifiable Credentials** standard, enabling trusted third parties to issue tamper-proof digital attestations.
+
+### How It Works
+
+1. **Issuer Authorization** - Platform administrator authorizes trusted issuers
+2. **Credential Request** - Users request credentials from authorized issuers
+3. **Issuance** - Issuer creates W3C-compliant credential and uploads to IPFS
+4. **On-Chain Registry** - Smart contract records credential metadata and IPFS hash
+5. **Verification** - Anyone can verify credential status on blockchain
+6. **Revocation** - Credentials can be revoked by issuer or subject
+
+### Benefits
+
+- ✅ Instant verification without contacting issuer
+- ✅ Tamper-proof cryptographic security
+- ✅ Privacy-preserving (full data off-chain)
+- ✅ Standards-compliant (W3C)
+- ✅ Portable across platforms
+
+For detailed documentation, see [docs/verifiable-credentials.md](docs/verifiable-credentials.md)
 
 ## 🔒 Security & Privacy Considerations
 
@@ -715,17 +918,6 @@ For production use with sensitive data, consider:
 4. **Use pseudonyms** if you want additional privacy
 5. **Review data** before submitting transactions
 
-### Audit Status
-
-⚠️ **Important Notice**: This project has not undergone professional security auditing. 
-
-**Before production deployment:**
-- Conduct thorough security audit by reputable firm
-- Perform extensive testing on testnets
-- Implement bug bounty program
-- Monitor for vulnerabilities
-- Have incident response plan ready
-
 ### Known Limitations
 
 1. **No Data Deletion**: Once on blockchain/IPFS, data cannot be fully deleted
@@ -733,30 +925,6 @@ For production use with sensitive data, consider:
 3. **No Access Control**: Anyone can read identities if they know the wallet address
 4. **Gas Costs**: Users pay gas fees for all transactions
 5. **Network Dependency**: Requires Ethereum network availability
-
-### Recommended Security Practices
-
-#### For Development
-```javascript
-// Always validate input
-if (!ipfsHash || ipfsHash.length === 0) {
-  throw new Error("Invalid IPFS hash");
-}
-
-// Use try-catch for blockchain calls
-try {
-  const tx = await contract.createIdentity(ipfsHash);
-  await tx.wait();
-} catch (error) {
-  console.error("Transaction failed:", error);
-}
-
-// Verify contract address
-const expectedAddress = "0x...";
-if (contract.address !== expectedAddress) {
-  throw new Error("Contract address mismatch");
-}
-```
 
 #### For Users
 - ✅ Only use test ETH and test data during development
@@ -770,76 +938,71 @@ if (contract.address !== expectedAddress) {
 ### Planned Features
 
 #### Phase 1: Core Improvements
-1. **Verifiable Credentials (W3C Standard)**
-   - Issue and verify digital credentials
-   - Third-party attestations from trusted entities
-   - Revocation registry for invalidating credentials
-   - Support for educational degrees, certifications, licenses
 
-2. **Enhanced Privacy**
+1. **Enhanced Privacy**
    - Client-side encryption before IPFS upload
    - Zero-knowledge proof integration
    - Selective attribute disclosure
    - Private data compartments
 
-3. **Social Recovery**
+2. **Social Recovery**
    - Guardian-based account recovery
    - Multi-signature approval process
    - Protection against key loss
    - Time-locked recovery mechanisms
 
 #### Phase 2: Advanced Features
-4. **DID Standards Compliance**
+3. **DID Standards Compliance**
    - W3C Decentralized Identifier (DID) specification
    - DID Document management
    - Universal resolver integration
    - Cross-chain DID portability
 
-5. **Reputation System**
+4. **Reputation System**
    - On-chain reputation scoring
    - Endorsements from other users
    - Skill verification
    - Activity-based reputation
 
-6. **ENS Integration**
+5. **ENS Integration**
    - Link human-readable .eth names
    - Improved user experience
    - Identity resolution via ENS
    - Reverse resolution support
 
 #### Phase 3: Ecosystem Growth
-7. **Multi-Chain Deployment**
+6. **Multi-Chain Deployment**
    - Deploy on Polygon for lower fees
    - Arbitrum and Optimism support
    - Cross-chain identity bridging
    - Chain-agnostic identity management
 
-8. **DAO Governance**
+7. **DAO Governance**
    - Community-driven protocol upgrades
    - Voting mechanisms for features
    - Decentralized decision making
    - Treasury management
 
-9. **Mobile Application**
+8. **Mobile Application**
    - Native iOS and Android apps
    - Biometric authentication
    - QR code identity sharing
    - Push notifications for updates
 
 #### Phase 4: Enterprise Features
-10. **Organization Support**
+9. **Organization Support**
     - Company/organization profiles
     - Employee credential issuance
     - Role-based access control
     - Bulk identity management
 
-11. **API & SDK**
+10. **API & SDK**
     - RESTful API for integration
     - JavaScript/TypeScript SDK
     - Python library
     - Documentation and examples
 
-12. **Analytics Dashboard**
+11. **Analytics Dashboard**
     - Identity statistics
     - Network insights
     - Usage metrics
@@ -858,13 +1021,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📚 Resources
 
+### Documentation
 - [Ethereum Documentation](https://ethereum.org/developers)
 - [Solidity Documentation](https://docs.soliditylang.org/)
 - [Hardhat Documentation](https://hardhat.org/getting-started/)
 - [React Documentation](https://react.dev/)
 - [Ethers.js Documentation](https://docs.ethers.org/)
 - [MetaMask Developer Docs](https://docs.metamask.io/)
+- [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model/)
+- [W3C DID Specification](https://www.w3.org/TR/did-core/)
+- [IPFS Documentation](https://docs.ipfs.tech/)
 
 ---
 
 **⭐ If you find this project useful, please consider giving it a star!**
+
+**🔗 For detailed information about Verifiable Credentials implementation, see [docs/verifiable-credentials.md](docs/verifiable-credentials.md)**
